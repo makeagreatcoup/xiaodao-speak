@@ -7,6 +7,7 @@ import {
   StopIcon,
   MagnifyingGlassIcon,
   SpeakerLoudIcon,
+  PlusIcon,
   CheckIcon,
   UploadIcon,
 } from "@radix-ui/react-icons";
