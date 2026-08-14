@@ -22,6 +22,54 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+/* 抽题轮盘（老虎机式滚动） */
+.reel-window {
+  position: relative;
+  height: 76px; /* 与 PromptStage 的 REEL_ROW 一致 */
+  overflow: hidden;
+  border-radius: 14px;
+}
+.reel-window::before,
+.reel-window::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 24px;
+  z-index: 2;
+  pointer-events: none;
+}
+.reel-window::before {
+  top: 0;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0));
+}
+.reel-window::after {
+  bottom: 0;
+  background: linear-gradient(to top, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0));
+}
+.dark .reel-window::before {
+  background: linear-gradient(to bottom, rgba(24, 24, 27, 0.95), rgba(24, 24, 27, 0));
+}
+.dark .reel-window::after {
+  background: linear-gradient(to top, rgba(24, 24, 27, 0.95), rgba(24, 24, 27, 0));
+}
+.reel-col {
+  will-change: transform, filter;
+}
+.reel-row {
+  height: 76px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.25rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: #18181b;
+}
+.dark .reel-row {
+  color: #fafafa;
+}
+
 /* Respect reduced motion at the CSS level too */
 @media (prefers-reduced-motion: reduce) {
   html {

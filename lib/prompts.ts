@@ -137,3 +137,39 @@ export function categoryMeta(key: CategoryKey): Category {
   if (found) return found;
   return { key: "custom", name: "我的命题", tag: "自命题", blurb: "你自己往里加的词。" };
 }
+
+// ===== 个人词库 =====
+// 个人词库「不分领域」，只是一串词，和内置 4 个领域混在同一个池里随机抽。
+// id 由词本身推导，保证跨会话去重稳定。
+const CUSTOM_PREFIX = "custom::";
+
+export function customPromptId(term: string): string {
+  return CUSTOM_PREFIX + term.trim();
+}
+
+export function makeCustomPrompt(term: string): Prompt {
+  return { id: customPromptId(term), term: term.trim(), category: "custom" };
+}
+
+/**
+ * 解析批量导入的词库文本：
+ * - 支持「一行一个词」
+ * - 支持「逗号 / 中文逗号 / 顿号 / 分号 / 制表符」分隔
+ * - 自动去空白、去空行、去重（大小写不敏感）
+ * - 跳过常见的表头（term / word / 词语 / 关键词 等）
+ */
+export function parseWordList(raw: string): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  const HEADER = /^(term|word|keyword|keywords|词语|词目|关键词|subject|topic|name|词条)$/i;
+  for (const part of raw.split(/[\r\n,，、;；\t]+/)) {
+    const t = part.trim();
+    if (!t) continue;
+    if (HEADER.test(t)) continue;
+    const key = t.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(t);
+  }
+  return out;
+}

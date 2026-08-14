@@ -9,11 +9,15 @@ import {
   SpeakerLoudIcon,
   PlusIcon,
   CheckIcon,
+  UploadIcon,
 } from "@radix-ui/react-icons";
 import {
   categories,
   categoryMeta,
+  prompts,
   promptsFor,
+  parseWordList,
+  makeCustomPrompt,
   type CategoryKey,
   type Prompt,
 } from "@/lib/prompts";
@@ -46,6 +50,10 @@ const SPEAK_DURATIONS = [
 const EXP_KEY = "xd-expressed";
 const CUSTOM_KEY = "xd-custom";
 
+const REEL_ROW = 76; // 单行高度，需与 globals.css 的 .reel-row 一致
+const REEL_ROUNDS = 26; // 轮盘掠过的候选词数量
+const REEL_DURATION = 2300; // 轮盘滚动时长 ms
+
 function pickRandom<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
@@ -61,17 +69,37 @@ function fmt(sec: number): string {
   return `${m}:${String(r).padStart(2, "0")}`;
 }
 
+// 个人词库只是一串词（不分领域），绘制时再包成 Prompt
 function buildPool(
   cat: CategoryKey,
-  custom: Prompt[],
+  custom: string[],
   includeExpressed: boolean,
   expressed: Set<string>,
 ): Prompt[] {
   let base: Prompt[];
-  if (cat === "all") base = [...promptsFor("all"), ...custom];
-  else if (cat === "custom") base = custom;
+  if (cat === "all") base = [...promptsFor("all"), ...custom.map(makeCustomPrompt)];
+  else if (cat === "custom") base = custom.map(makeCustomPrompt);
   else base = promptsFor(cat);
   return includeExpressed ? base : base.filter((p) => !expressed.has(p.id));
+}
+
+// 生成轮盘序列：快速掠过候选词，最后一格定格在抽中的词
+function buildReel(pool: Prompt[], final: Prompt, rows: number): string[] {
+  const terms = pool.map((p) => p.term);
+  const seq: string[] = [];
+  let last = "";
+  for (let i = 0; i < rows; i++) {
+    let t = terms[Math.floor(Math.random() * terms.length)];
+    let guard = 0;
+    while (t === last && terms.length > 1 && guard < 8) {
+      t = terms[Math.floor(Math.random() * terms.length)];
+      guard += 1;
+    }
+    seq.push(t);
+    last = t;
+  }
+  seq[rows - 1] = final.term;
+  return seq;
 }
 
 export function PromptStage() {
@@ -80,7 +108,7 @@ export function PromptStage() {
   const [prompt, setPrompt] = useState<Prompt | null>(null);
   const [spinning, setSpinning] = useState(false);
 
-  const [customTerms, setCustomTerms] = useState<Prompt[]>([]);
+  const [customTerms, setCustomTerms] = useState<string[]>([]);
   const [expressed, setExpressed] = useState<Set<string>>(new Set());
   const [includeExpressed, setIncludeExpressed] = useState(false);
 
@@ -93,24 +121,59 @@ export function PromptStage() {
   const [speakDuration, setSpeakDuration] = useState(60);
   const [left, setLeft] = useState(60);
 
-  const [newTerm, setNewTerm] = useState("");
+  // 轮盘动画状态
+  const [reelSeq, setReelSeq] = useState<string[]>([]);
+  const [reelFinal, setReelFinal] = useState<Prompt | null>(null);
+  const [flash, setFlash] = useState(false);
+  const reelRef = useRef<HTMLDivElement | null>(null);
+  const rafRef = useRef<number | null>(null);
+
+  // 批量导入弹层
+  const [importOpen, setImportOpen] = useState(false);
+  const [importText, setImportText] = useState("");
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const spinRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const activeMeta = useMemo(() => categoryMeta(cat), [cat]);
 
-  // 载入本地存储：已表达 + 自命题，并完成首抽
+  const builtinTerms = useMemo(
+    () => new Set(prompts.map((p) => p.term.toLowerCase())),
+    [],
+  );
+  const parsed = useMemo(() => parseWordList(importText), [importText]);
+  const importDupes = useMemo(
+    () =>
+      parsed.filter((t) => {
+        const k = t.toLowerCase();
+        return (
+          customTerms.some((c) => c.toLowerCase() === k) || builtinTerms.has(k)
+        );
+      }),
+    [parsed, customTerms, builtinTerms],
+  );
+  const importNew = useMemo(
+    () => parsed.filter((t) => !importDupes.includes(t)),
+    [parsed, importDupes],
+  );
+
+  // 载入本地存储：已表达 + 个人词库，并完成首抽（首抽不动画，直接定格）
   useEffect(() => {
     let exp: Set<string> = new Set();
-    let cust: Prompt[] = [];
+    let cust: string[] = [];
     try {
       const e = JSON.parse(localStorage.getItem(EXP_KEY) || "[]");
       if (Array.isArray(e)) exp = new Set(e as string[]);
     } catch {}
     try {
       const c = JSON.parse(localStorage.getItem(CUSTOM_KEY) || "[]");
-      if (Array.isArray(c)) cust = c as Prompt[];
+      if (Array.isArray(c)) {
+        cust = c
+          .map((x: unknown) =>
+            typeof x === "string" ? x : ((x as { term?: string })?.term ?? ""),
+          )
+          .map((s: string) => s.trim())
+          .filter(Boolean);
+      }
     } catch {}
     setExpressed(exp);
     setCustomTerms(cust);
@@ -129,44 +192,78 @@ export function PromptStage() {
   useEffect(() => {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
-      if (spinRef.current) clearTimeout(spinRef.current);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
   }, []);
+
+  // 轮盘滚动动画：快速掠过 → 缓动减速定格 + 模糊→清晰；减弱动效时由 drawFromPool 直接定格
+  useEffect(() => {
+    if (!spinning || reelSeq.length === 0 || !reelRef.current) return;
+    const el = reelRef.current;
+    const N = reelSeq.length;
+    const start = performance.now();
+    const easeOut = (p: number) => 1 - Math.pow(1 - p, 3);
+    const tick = (now: number) => {
+      const p = Math.min(1, (now - start) / REEL_DURATION);
+      const e = easeOut(p);
+      const rowFloat = e * (N - 1);
+      const ty = -rowFloat * REEL_ROW;
+      const speed = 3 * Math.pow(1 - p, 2); // 导数幅度：开头快、结尾 0
+      const blur = Math.min(3.5, speed * 1.5);
+      el.style.transform = `translateY(${ty}px)`;
+      el.style.filter = blur > 0.2 ? `blur(${blur}px)` : "none";
+      if (p < 1) {
+        rafRef.current = requestAnimationFrame(tick);
+      } else {
+        el.style.transform = `translateY(${-(N - 1) * REEL_ROW}px)`;
+        el.style.filter = "none";
+        rafRef.current = null;
+        setSpinning(false);
+        setFlash(true); // 导演红闪
+        setPrompt(reelFinal);
+        setReelSeq([]);
+        window.setTimeout(() => setFlash(false), 480);
+      }
+    };
+    rafRef.current = requestAnimationFrame(tick);
+    return () => {
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+    };
+  }, [spinning, reelSeq, reelFinal]);
 
   function clearTimers() {
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
-    if (spinRef.current) {
-      clearTimeout(spinRef.current);
-      spinRef.current = null;
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
     }
   }
 
   function drawFromPool(pool: Prompt[]) {
     if (pool.length === 0) {
       setPrompt(null);
+      setSpinning(false);
+      setReelSeq([]);
       return;
     }
+    const final = pickRandom(pool);
     if (reduce) {
-      setPrompt(pickRandom(pool));
+      setPrompt(final);
+      setSpinning(false);
+      setReelSeq([]);
+      setFlash(false);
       return;
     }
+    setReelFinal(final);
+    setReelSeq(buildReel(pool, final, REEL_ROUNDS));
     setSpinning(true);
-    let ticks = 0;
-    const maxTicks = 9;
-    const step = () => {
-      setPrompt(pickRandom(pool));
-      ticks += 1;
-      if (ticks >= maxTicks) {
-        setSpinning(false);
-        spinRef.current = null;
-      } else {
-        spinRef.current = setTimeout(step, 60);
-      }
-    };
-    spinRef.current = setTimeout(step, 60);
+    setFlash(false);
   }
 
   function spin() {
@@ -178,6 +275,8 @@ export function PromptStage() {
     if (pool.length === 0) {
       setEmptyReason(cat === "custom" ? "no-custom" : "all-done");
       setPrompt(null);
+      setSpinning(false);
+      setReelSeq([]);
       return;
     }
     setEmptyReason("none");
@@ -195,6 +294,8 @@ export function PromptStage() {
     if (pool.length === 0) {
       setEmptyReason(next === "custom" ? "no-custom" : "all-done");
       setPrompt(null);
+      setSpinning(false);
+      setReelSeq([]);
       return;
     }
     setEmptyReason("none");
@@ -212,30 +313,36 @@ export function PromptStage() {
       setEmptyReason("all-done");
       setPrompt(null);
       setPhase("idle");
+      setSpinning(false);
+      setReelSeq([]);
       return;
     }
     setEmptyReason("none");
     drawFromPool(pool);
   }
 
-  function addCustom() {
-    const t = newTerm.trim();
-    if (!t) return;
-    const p: Prompt = {
-      id: `custom-${Date.now()}`,
-      term: t,
-      category: "custom",
-    };
-    const next = [...customTerms, p];
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    try {
+      const text = await f.text();
+      setImportText((prev) => (prev ? `${prev}\n${text}` : text));
+    } catch {}
+    e.target.value = ""; // 允许重复选择同一文件
+  }
+
+  function confirmImport() {
+    if (importNew.length === 0) return;
+    const next = [...customTerms, ...importNew];
     setCustomTerms(next);
-    setNewTerm("");
-    setCat("custom");
+    setImportOpen(false);
+    setImportText("");
     setEmptyReason("none");
-    clearTimers();
-    setPhase("idle");
-    setRunning(false);
-    setLeft(speakDuration);
-    setPrompt(p);
+    // 若当前空闲，抽一个出来，立刻能练
+    if (phase === "idle") {
+      const pool = buildPool(cat, next, includeExpressed, expressed);
+      if (pool.length > 0) drawFromPool(pool);
+    }
   }
 
   function startResearch() {
@@ -314,8 +421,8 @@ export function PromptStage() {
 
   // 进度统计
   const basePool = useMemo(() => {
-    if (cat === "all") return [...promptsFor("all"), ...customTerms];
-    if (cat === "custom") return customTerms;
+    if (cat === "all") return [...promptsFor("all"), ...customTerms.map(makeCustomPrompt)];
+    if (cat === "custom") return customTerms.map(makeCustomPrompt);
     return promptsFor(cat);
   }, [cat, customTerms]);
   const availableCount = includeExpressed
@@ -460,33 +567,46 @@ export function PromptStage() {
           </div>
 
           {prompt ? (
-            <>
+            spinning ? (
+              <div className="reel-window mt-5" aria-live="polite">
+                <div ref={reelRef} className="reel-col">
+                  {reelSeq.map((w, i) => (
+                    <div key={i} className="reel-row">
+                      {w}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
               <p
                 className={
-                  "mt-5 text-balance text-4xl font-bold leading-tight tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-5xl " +
-                  (spinning ? "opacity-60" : "opacity-100")
+                  "mt-5 text-balance text-4xl font-bold leading-tight tracking-tight transition-[color,transform] duration-300 sm:text-5xl " +
+                  (flash
+                    ? "scale-[1.03] text-accent"
+                    : "text-zinc-900 dark:text-zinc-50")
                 }
               >
                 {prompt.term}
               </p>
-              {prompt.note && (
-                <p className="mt-4 border-l-2 border-accent/50 pl-3 text-sm text-zinc-500 dark:text-zinc-400">
-                  小导支招：{prompt.note}
-                </p>
-              )}
-            </>
+            )
           ) : (
             <p className="mt-5 text-2xl font-semibold leading-snug text-zinc-400">
               {emptyReason === "no-custom"
-                ? "还没有你的命题。在下面输入框加一个词，开始练。"
+                ? "还没有你的命题。点「批量导入」贴一批词，开始练。"
                 : emptyReason === "all-done"
                   ? "这一场都讲完啦。重置进度，或勾上「包含已表达过的」再练一轮。"
                   : "点「抽命题」，小导给你抛个词。"}
             </p>
           )}
 
+          {prompt && !spinning && prompt.note && (
+            <p className="mt-4 border-l-2 border-accent/50 pl-3 text-sm text-zinc-500 dark:text-zinc-400">
+              小导支招：{prompt.note}
+            </p>
+          )}
+
           {/* 阶段引导 */}
-          {phase === "research" && (
+          {phase === "research" && !spinning && (
             <p className="mt-4 rounded-xl bg-zinc-50 px-4 py-3 text-sm text-zinc-600 dark:bg-zinc-800/60 dark:text-zinc-300">
               打开浏览器，查这个词的来历、案例、还有反方观点。时间一到自动进入开讲。
             </p>
@@ -556,7 +676,7 @@ export function PromptStage() {
           {phase === "idle" && (
             <button
               onClick={startResearch}
-              disabled={!prompt}
+              disabled={!prompt || spinning}
               className="inline-flex items-center gap-2 rounded-full bg-accent px-7 py-3 font-semibold text-accent-fg transition-transform hover:-translate-y-px active:translate-y-0 disabled:opacity-50"
             >
               <MagnifyingGlassIcon className="h-4 w-4" />
@@ -638,7 +758,7 @@ export function PromptStage() {
               className="inline-flex items-center gap-2 rounded-full border border-zinc-300 px-5 py-3 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-900"
             >
               <ReloadIcon className="h-4 w-4" />
-              换个命题
+              抽命题
             </button>
           )}
         </div>
@@ -682,34 +802,140 @@ export function PromptStage() {
         </div>
       </div>
 
-      {/* 我的命题：录入 */}
+      {/* 我的命题：批量导入入口 */}
       <div className="mx-auto mt-10 max-w-xl rounded-2xl border border-zinc-200 bg-zinc-50/60 p-5 dark:border-zinc-800 dark:bg-zinc-900/40">
-        <p className="text-sm font-semibold text-zinc-700 dark:text-zinc-200">
-          加自己的命题
-        </p>
-        <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-          想练哪个词，直接写进来。存在本机浏览器，换命题时会出现在「我的命题」里。
-        </p>
-        <div className="mt-3 flex gap-2">
-          <input
-            value={newTerm}
-            onChange={(e) => setNewTerm(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") addCustom();
-            }}
-            placeholder="比如：内卷、延迟满足、信息茧房"
-            className="flex-1 rounded-full border border-zinc-300 bg-white px-4 py-2 text-sm text-zinc-800 outline-none focus:border-accent dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-          />
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-semibold text-zinc-700 dark:text-zinc-200">
+              我的命题
+            </p>
+            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+              已导入 <b className="text-zinc-700 dark:text-zinc-200">{customTerms.length}</b> 个词，和内置 4 个领域混在同一个池里随机抽。
+            </p>
+          </div>
           <button
-            onClick={addCustom}
-            disabled={!newTerm.trim()}
-            className="inline-flex items-center gap-1.5 rounded-full bg-accent px-4 py-2 text-sm font-semibold text-accent-fg transition-transform hover:-translate-y-px active:translate-y-0 disabled:opacity-50"
+            onClick={() => setImportOpen(true)}
+            className="inline-flex items-center gap-1.5 rounded-full bg-accent px-4 py-2 text-sm font-semibold text-accent-fg transition-transform hover:-translate-y-px active:translate-y-0"
           >
             <PlusIcon className="h-4 w-4" />
-            添加
+            批量导入
           </button>
         </div>
+
+        {customTerms.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {customTerms.slice(0, 28).map((t) => (
+              <span
+                key={t}
+                className="rounded-full bg-white px-2.5 py-1 text-xs text-zinc-600 ring-1 ring-zinc-200 dark:bg-zinc-900 dark:text-zinc-300 dark:ring-zinc-800"
+              >
+                {t}
+              </span>
+            ))}
+            {customTerms.length > 28 && (
+              <span className="rounded-full px-2.5 py-1 text-xs text-zinc-400">
+                +{customTerms.length - 28}
+              </span>
+            )}
+          </div>
+        )}
       </div>
+
+      {/* 批量导入弹层 */}
+      {importOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setImportOpen(false)}
+            aria-hidden
+          />
+          <div className="relative w-full max-w-lg rounded-2xl border border-zinc-200 bg-white p-6 shadow-xl dark:border-zinc-800 dark:bg-zinc-900">
+            <div className="flex items-start justify-between">
+              <div>
+                <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
+                  批量导入命题
+                </h3>
+                <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                  粘贴你的词库：支持一行一个，或用逗号 / 顿号分隔；也可以上传 .txt / .csv 文件。
+                </p>
+              </div>
+              <button
+                onClick={() => setImportOpen(false)}
+                className="rounded-full p-1 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800"
+                aria-label="关闭"
+              >
+                <span className="block h-5 w-5 text-center text-lg leading-5">×</span>
+              </button>
+            </div>
+
+            <textarea
+              value={importText}
+              onChange={(e) => setImportText(e.target.value)}
+              rows={8}
+              placeholder={"内卷\n延迟满足\n信息茧房\n复利, 沉没成本, 机会成本"}
+              className="mt-4 w-full resize-y rounded-xl border border-zinc-300 bg-white px-3 py-2 font-mono text-sm text-zinc-800 outline-none focus:border-accent dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+            />
+
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-900">
+                <UploadIcon className="h-4 w-4" />
+                上传 .txt / .csv
+                <input
+                  type="file"
+                  accept=".txt,.csv,text/plain,text/csv"
+                  onChange={handleFile}
+                  className="hidden"
+                />
+              </label>
+              <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                {parsed.length === 0
+                  ? "还没识别到词"
+                  : `共识别 ${parsed.length} 个词`}
+              </span>
+              {importDupes.length > 0 && (
+                <span className="text-xs text-zinc-400">
+                  （{importDupes.length} 个已存在，自动跳过）
+                </span>
+              )}
+            </div>
+
+            {importNew.length > 0 && (
+              <div className="mt-3 flex max-h-28 flex-wrap gap-1.5 overflow-y-auto">
+                {importNew.slice(0, 60).map((t) => (
+                  <span
+                    key={t}
+                    className="rounded-full bg-accent/10 px-2.5 py-1 text-xs text-accent"
+                  >
+                    {t}
+                  </span>
+                ))}
+                {importNew.length > 60 && (
+                  <span className="rounded-full px-2.5 py-1 text-xs text-zinc-400">
+                    +{importNew.length - 60}
+                  </span>
+                )}
+              </div>
+            )}
+
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                onClick={() => setImportOpen(false)}
+                className="rounded-full px-4 py-2 text-sm font-medium text-zinc-500 transition-colors hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
+              >
+                取消
+              </button>
+              <button
+                onClick={confirmImport}
+                disabled={importNew.length === 0}
+                className="inline-flex items-center gap-1.5 rounded-full bg-accent px-5 py-2 text-sm font-semibold text-accent-fg transition-transform hover:-translate-y-px active:translate-y-0 disabled:opacity-50"
+              >
+                <PlusIcon className="h-4 w-4" />
+                导入 {importNew.length > 0 ? `${importNew.length} 个` : ""}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
