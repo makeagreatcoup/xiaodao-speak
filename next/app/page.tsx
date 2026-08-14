@@ -18,7 +18,7 @@ export default function Page() {
             先查再讲
           </h1>
           <p className="mt-5 max-w-xl text-lg text-zinc-500 dark:text-zinc-400">
-            小导随机甩你一个话题。你上网查 10 分钟资料，再用 1 分钟把它讲清楚。练的是把陌生东西讲到别人听懂的本事。
+            小导随机甩你一个词。你上网查 10 分钟资料，再用 1 分钟把它讲清楚。练的是把陌生概念讲到别人听懂的本事。
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <a
