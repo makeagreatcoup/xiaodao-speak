@@ -50,7 +50,7 @@ const SPEAK_DURATIONS = [
 const EXP_KEY = "xd-expressed";
 const CUSTOM_KEY = "xd-custom";
 
-const REEL_ROW = 76; // 单行高度，需与 globals.css 的 .reel-row 一致
+const REEL_ROW = 140; // 单行高度，需与 globals.css 的 .reel-row 一致
 const REEL_ROUNDS = 26; // 轮盘掠过的候选词数量
 const REEL_DURATION = 2300; // 轮盘滚动时长 ms
 
@@ -461,35 +461,8 @@ export function PromptStage() {
   return (
     <section
       id="stage"
-      className="relative mx-auto max-w-3xl px-4 py-16 sm:px-6 sm:py-20"
+      className="relative mx-auto flex min-h-screen max-w-3xl flex-col items-center justify-center px-4 py-8 sm:px-6"
     >
-      {/* 步骤指示 */}
-      <div className="mb-7 flex items-center justify-center gap-3 text-sm">
-        <span
-          className={
-            "inline-flex items-center gap-1.5 rounded-full px-3 py-1 font-medium transition-colors " +
-            (phase === "research" || phase === "ready" || phase === "speak" || phase === "done"
-              ? "bg-accent text-accent-fg"
-              : "bg-zinc-100 text-zinc-500 dark:bg-zinc-900 dark:text-zinc-400")
-          }
-        >
-          <MagnifyingGlassIcon className="h-3.5 w-3.5" />
-          1 查资料
-        </span>
-        <span className="h-px w-8 bg-zinc-300 dark:bg-zinc-700" />
-        <span
-          className={
-            "inline-flex items-center gap-1.5 rounded-full px-3 py-1 font-medium transition-colors " +
-            (phase === "speak" || phase === "done"
-              ? "bg-accent text-accent-fg"
-              : "bg-zinc-100 text-zinc-500 dark:bg-zinc-900 dark:text-zinc-400")
-          }
-        >
-          <SpeakerLoudIcon className="h-3.5 w-3.5" />
-          2 开讲
-        </span>
-      </div>
-
       {/* 分类切换（含全池混抽 + 我的命题） */}
       <div className="mb-5 flex flex-wrap justify-center gap-2">
         {categories.map((c) => {
@@ -527,45 +500,14 @@ export function PromptStage() {
         )}
       </div>
 
-      {/* 进度 + 设置行 */}
-      <div className="mb-5 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-zinc-500 dark:text-zinc-400">
-        <span>
-          已表达 <b className="text-zinc-700 dark:text-zinc-200">{expressedCount}</b> · 剩余{" "}
-          <b className="text-zinc-700 dark:text-zinc-200">{availableCount}</b>
-        </span>
-        <label className="inline-flex cursor-pointer items-center gap-1.5">
-          <input
-            type="checkbox"
-            checked={includeExpressed}
-            onChange={(e) => {
-              setIncludeExpressed(e.target.checked);
-              if (phase === "idle") spin();
-            }}
-            className="h-3.5 w-3.5 accent-[var(--accent)]"
-          />
-          包含已表达过的
-        </label>
-        {expressedCount > 0 && (
-          <button
-            onClick={() => {
-              setExpressed(new Set());
-              if (phase === "idle") spin();
-            }}
-            className="underline-offset-2 hover:underline"
-          >
-            重置进度
-          </button>
-        )}
-      </div>
-
-      {/* 命题卡 */}
-      <div className="relative">
+      {/* 命题卡：大词 + 轮盘，整屏居中核心 */}
+      <div className="relative w-full">
         <div
           aria-hidden
-          className="pointer-events-none absolute -inset-8 -z-10 rounded-[2.5rem] bg-accent/10 blur-3xl"
+          className="pointer-events-none absolute -inset-10 -z-10 rounded-[3rem] bg-accent/10 blur-3xl"
         />
-        <div className="rounded-3xl border border-zinc-200 bg-white p-7 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:p-10">
-          <div className="flex items-center gap-2">
+        <div className="rounded-3xl border border-zinc-200 bg-white p-6 text-center shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:p-8">
+          <div className="flex items-center justify-center gap-2">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-accent/10 px-3 py-1 text-xs font-semibold text-accent">
               <MagnifyingGlassIcon className="h-3.5 w-3.5" />
               {activeMeta.name}
@@ -574,7 +516,7 @@ export function PromptStage() {
           </div>
 
           {spinning ? (
-            <div className="reel-window mt-5" aria-live="polite">
+            <div className="reel-window mt-6 mx-auto" aria-live="polite">
               <div ref={reelRef} className="reel-col">
                 {reelSeq.map((w, i) => (
                   <div key={i} className="reel-row">
@@ -586,55 +528,54 @@ export function PromptStage() {
           ) : prompt ? (
             <p
               className={
-                "mt-5 text-center text-balance text-4xl font-bold leading-tight tracking-tight text-accent transition-transform duration-300 sm:text-5xl " +
+                "mt-6 text-center text-6xl font-bold leading-tight tracking-tight text-accent transition-transform duration-300 sm:text-7xl " +
                 (flash ? "scale-[1.04]" : "scale-100")
               }
             >
               {prompt.term}
             </p>
           ) : (
-            <p className="mt-5 text-2xl font-semibold leading-snug text-zinc-400">
-              {emptyReason === "no-custom"
-                ? "还没有你的命题。点「批量导入」贴一批词，开始练。"
-                : emptyReason === "all-done"
-                  ? "这一场都讲完啦。重置进度，或勾上「包含已表达过的」再练一轮。"
-                  : "点「抽命题」，小导给你抛个词。"}
+            <p className="mt-6 text-3xl font-semibold text-zinc-400">
+              抽一个词
             </p>
           )}
 
-          {prompt && !spinning && prompt.note && (
-            <p className="mt-4 border-l-2 border-accent/50 pl-3 text-sm text-zinc-500 dark:text-zinc-400">
-              小导支招：{prompt.note}
-            </p>
-          )}
-
-          {/* 阶段引导 */}
-          {phase === "research" && !spinning && (
-            <p className="mt-4 rounded-xl bg-zinc-50 px-4 py-3 text-sm text-zinc-600 dark:bg-zinc-800/60 dark:text-zinc-300">
-              打开浏览器，查这个词的来历、案例、还有反方观点。时间一到自动进入开讲。
-            </p>
-          )}
-          {phase === "ready" && (
-            <p className="mt-4 rounded-xl bg-zinc-50 px-4 py-3 text-sm text-zinc-600 dark:bg-zinc-800/60 dark:text-zinc-300">
-              资料查得差不多了？合上屏幕，用 1 分钟把它讲清楚。先给结论，再补细节。
-            </p>
-          )}
-          {phase === "speak" && (
-            <p className="mt-4 rounded-xl bg-zinc-50 px-4 py-3 text-sm text-zinc-600 dark:bg-zinc-800/60 dark:text-zinc-300">
-              别看屏幕。开口就讲，卡壳也别停，想到哪说到哪。
-            </p>
-          )}
-          {phase === "done" && (
-            <p className="mt-4 rounded-xl bg-accent/10 px-4 py-3 text-sm text-accent">
-              时间到。这段讲得顺不顺都算数，已帮你记成「已表达」。
-            </p>
-          )}
+          {/* 进度 + 设置，紧凑一行 */}
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-zinc-500 dark:text-zinc-400">
+            <span>
+              已表达 <b className="text-zinc-700 dark:text-zinc-200">{expressedCount}</b> · 剩余{" "}
+              <b className="text-zinc-700 dark:text-zinc-200">{availableCount}</b>
+            </span>
+            <label className="inline-flex cursor-pointer items-center gap-1.5">
+              <input
+                type="checkbox"
+                checked={includeExpressed}
+                onChange={(e) => {
+                  setIncludeExpressed(e.target.checked);
+                  if (phase === "idle") spin();
+                }}
+                className="h-3.5 w-3.5 accent-[var(--accent)]"
+              />
+              包含已表达过的
+            </label>
+            {expressedCount > 0 && (
+              <button
+                onClick={() => {
+                  setExpressed(new Set());
+                  if (phase === "idle") spin();
+                }}
+                className="underline-offset-2 hover:underline"
+              >
+                重置进度
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
       {/* 计时环 + 控制 */}
-      <div className="mt-8 flex flex-col items-center">
-        <div className="relative h-[180px] w-[180px]">
+      <div className="mt-6 flex flex-col items-center">
+        <div className="relative h-[140px] w-[140px]">
           <svg viewBox="0 0 180 180" className="h-full w-full -rotate-90" aria-hidden>
             <circle
               cx="90"
@@ -805,44 +746,13 @@ export function PromptStage() {
         </div>
       </div>
 
-      {/* 我的命题：批量导入入口 */}
-      <div className="mx-auto mt-10 max-w-xl rounded-2xl border border-zinc-200 bg-zinc-50/60 p-5 dark:border-zinc-800 dark:bg-zinc-900/40">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="text-sm font-semibold text-zinc-700 dark:text-zinc-200">
-              我的命题
-            </p>
-            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-              已导入 <b className="text-zinc-700 dark:text-zinc-200">{customTerms.length}</b> 个词，和内置 4 个领域混在同一个池里随机抽。
-            </p>
-          </div>
-          <button
-            onClick={() => setImportOpen(true)}
-            className="inline-flex items-center gap-1.5 rounded-full bg-accent px-4 py-2 text-sm font-semibold text-accent-fg transition-transform hover:-translate-y-px active:translate-y-0"
-          >
-            <PlusIcon className="h-4 w-4" />
-            批量导入
-          </button>
-        </div>
-
-        {customTerms.length > 0 && (
-          <div className="mt-3 flex flex-wrap gap-1.5">
-            {customTerms.slice(0, 28).map((t) => (
-              <span
-                key={t}
-                className="rounded-full bg-white px-2.5 py-1 text-xs text-zinc-600 ring-1 ring-zinc-200 dark:bg-zinc-900 dark:text-zinc-300 dark:ring-zinc-800"
-              >
-                {t}
-              </span>
-            ))}
-            {customTerms.length > 28 && (
-              <span className="rounded-full px-2.5 py-1 text-xs text-zinc-400">
-                +{customTerms.length - 28}
-              </span>
-            )}
-          </div>
-        )}
-      </div>
+      {/* 批量导入入口（紧凑，无说明） */}
+      <button
+        onClick={() => setImportOpen(true)}
+        className="mt-6 text-xs font-medium text-zinc-400 transition-colors hover:text-accent"
+      >
+        + 导入词库
+      </button>
 
       {/* 批量导入弹层 */}
       {importOpen && (
