@@ -7,13 +7,10 @@ import {
   StopIcon,
   MagnifyingGlassIcon,
   SpeakerLoudIcon,
-  PlusIcon,
   CheckIcon,
   UploadIcon,
 } from "@radix-ui/react-icons";
 import {
-  categories,
-  categoryMeta,
   prompts,
   promptsFor,
   parseWordList,
@@ -133,8 +130,6 @@ export function PromptStage() {
   const [importText, setImportText] = useState("");
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const activeMeta = useMemo(() => categoryMeta(cat), [cat]);
 
   const builtinTerms = useMemo(
     () => new Set(prompts.map((p) => p.term.toLowerCase())),
@@ -426,17 +421,6 @@ export function PromptStage() {
     }
   }
 
-  // 进度统计
-  const basePool = useMemo(() => {
-    if (cat === "all") return [...promptsFor("all"), ...customTerms.map(makeCustomPrompt)];
-    if (cat === "custom") return customTerms.map(makeCustomPrompt);
-    return promptsFor(cat);
-  }, [cat, customTerms]);
-  const availableCount = includeExpressed
-    ? basePool.length
-    : basePool.filter((p) => !expressed.has(p.id)).length;
-  const expressedCount = basePool.filter((p) => expressed.has(p.id)).length;
-
   const pct = (() => {
     const total = phase === "research" ? researchDuration : speakDuration;
     return total > 0 ? (left / total) * 100 : 0;
@@ -456,50 +440,11 @@ export function PromptStage() {
             ? "这段讲完了"
             : "准备就绪";
 
-  const showCustomChip = customTerms.length > 0;
-
   return (
     <section
       id="stage"
       className="relative mx-auto flex min-h-screen max-w-3xl flex-col items-center justify-center px-4 py-8 sm:px-6"
     >
-      {/* 分类切换（含全池混抽 + 我的命题） */}
-      <div className="mb-5 flex flex-wrap justify-center gap-2">
-        {categories.map((c) => {
-          const active = c.key === cat;
-          const isAll = c.key === "all";
-          return (
-            <button
-              key={c.key}
-              onClick={() => switchCat(c.key)}
-              className={
-                "rounded-full px-4 py-2 text-sm font-medium transition-colors " +
-                (active
-                  ? "bg-accent text-accent-fg"
-                  : isAll
-                    ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900"
-                    : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800")
-              }
-            >
-              {c.name}
-            </button>
-          );
-        })}
-        {showCustomChip && (
-          <button
-            onClick={() => switchCat("custom")}
-            className={
-              "rounded-full px-4 py-2 text-sm font-medium transition-colors " +
-              (cat === "custom"
-                ? "bg-accent text-accent-fg"
-                : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800")
-            }
-          >
-            我的命题 {customTerms.length}
-          </button>
-        )}
-      </div>
-
       {/* 命题卡：大词 + 轮盘，整屏居中核心 */}
       <div className="relative w-full">
         <div
@@ -507,16 +452,9 @@ export function PromptStage() {
           className="pointer-events-none absolute -inset-10 -z-10 rounded-[3rem] bg-accent/10 blur-3xl"
         />
         <div className="rounded-3xl border border-zinc-200 bg-white p-6 text-center shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:p-8">
-          <div className="flex items-center justify-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-accent/10 px-3 py-1 text-xs font-semibold text-accent">
-              <MagnifyingGlassIcon className="h-3.5 w-3.5" />
-              {activeMeta.name}
-            </span>
-            <span className="text-xs text-zinc-400">{activeMeta.tag}</span>
-          </div>
-
-          {spinning ? (
-            <div className="reel-window mt-6 mx-auto" aria-live="polite">
+          {/* 固定高度窗：滚动与定格共用，杜绝选中后整块上移 */}
+          <div className="reel-window mx-auto" aria-live="polite">
+            {spinning ? (
               <div ref={reelRef} className="reel-col">
                 {reelSeq.map((w, i) => (
                   <div key={i} className="reel-row">
@@ -524,50 +462,17 @@ export function PromptStage() {
                   </div>
                 ))}
               </div>
-            </div>
-          ) : prompt ? (
-            <p
-              className={
-                "mt-6 text-center text-6xl font-bold leading-tight tracking-tight text-accent transition-transform duration-300 sm:text-7xl " +
-                (flash ? "scale-[1.04]" : "scale-100")
-              }
-            >
-              {prompt.term}
-            </p>
-          ) : (
-            <p className="mt-6 text-3xl font-semibold text-zinc-400">
-              抽一个词
-            </p>
-          )}
-
-          {/* 进度 + 设置，紧凑一行 */}
-          <div className="mt-6 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-zinc-500 dark:text-zinc-400">
-            <span>
-              已表达 <b className="text-zinc-700 dark:text-zinc-200">{expressedCount}</b> · 剩余{" "}
-              <b className="text-zinc-700 dark:text-zinc-200">{availableCount}</b>
-            </span>
-            <label className="inline-flex cursor-pointer items-center gap-1.5">
-              <input
-                type="checkbox"
-                checked={includeExpressed}
-                onChange={(e) => {
-                  setIncludeExpressed(e.target.checked);
-                  if (phase === "idle") spin();
-                }}
-                className="h-3.5 w-3.5 accent-[var(--accent)]"
-              />
-              包含已表达过的
-            </label>
-            {expressedCount > 0 && (
-              <button
-                onClick={() => {
-                  setExpressed(new Set());
-                  if (phase === "idle") spin();
-                }}
-                className="underline-offset-2 hover:underline"
+            ) : prompt ? (
+              <div
+                className={
+                  "reel-word transition-transform duration-300 " +
+                  (flash ? "scale-[1.04]" : "scale-100")
+                }
               >
-                重置进度
-              </button>
+                {prompt.term}
+              </div>
+            ) : (
+              <div className="reel-word reel-word--empty">抽一个词</div>
             )}
           </div>
         </div>
@@ -706,53 +611,7 @@ export function PromptStage() {
             </button>
           )}
         </div>
-
-        {/* 时长选择 */}
-        <div className="mt-7 flex flex-wrap items-center justify-center gap-x-6 gap-y-3">
-          <div className="flex items-center gap-2">
-            <span className="mr-1 text-xs text-zinc-400">查资料</span>
-            {RESEARCH_DURATIONS.map((d) => (
-              <button
-                key={d.value}
-                onClick={() => changeResearch(d.value)}
-                className={
-                  "rounded-full px-3 py-1.5 text-xs font-medium transition-colors " +
-                  (d.value === researchDuration
-                    ? "bg-accent/10 text-accent"
-                    : "text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900")
-                }
-              >
-                {d.label}
-              </button>
-            ))}
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="mr-1 text-xs text-zinc-400">开讲</span>
-            {SPEAK_DURATIONS.map((d) => (
-              <button
-                key={d.value}
-                onClick={() => changeSpeak(d.value)}
-                className={
-                  "rounded-full px-3 py-1.5 text-xs font-medium transition-colors " +
-                  (d.value === speakDuration
-                    ? "bg-accent/10 text-accent"
-                    : "text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900")
-                }
-              >
-                {d.label}
-              </button>
-            ))}
-          </div>
-        </div>
       </div>
-
-      {/* 批量导入入口（紧凑，无说明） */}
-      <button
-        onClick={() => setImportOpen(true)}
-        className="mt-6 text-xs font-medium text-zinc-400 transition-colors hover:text-accent"
-      >
-        + 导入词库
-      </button>
 
       {/* 批量导入弹层 */}
       {importOpen && (

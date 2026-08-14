@@ -66,6 +66,23 @@ body {
   letter-spacing: -0.01em;
   color: #18181b;
 }
+/* 定格词：与滚动窗同高同字号，选中后不挪位、不缩高 */
+.reel-word {
+  height: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3.5rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--accent);
+}
+.reel-word--empty {
+  color: #a1a1aa;
+}
+.dark .reel-word--empty {
+  color: #71717a;
+}
 .dark .reel-row {
   color: #fafafa;
 }
