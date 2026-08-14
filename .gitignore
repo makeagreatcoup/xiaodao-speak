@@ -1,14 +1,11 @@
 # dependencies
 node_modules/
-next/node_modules/
 
 # next.js build output
 .next/
-next/.next/
 
 # env files
 .env*
-next/.env*
 
 # misc
 .DS_Store
