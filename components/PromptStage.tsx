@@ -586,10 +586,8 @@ export function PromptStage() {
           ) : prompt ? (
             <p
               className={
-                "mt-5 text-balance text-4xl font-bold leading-tight tracking-tight transition-[color,transform] duration-300 sm:text-5xl " +
-                (flash
-                  ? "scale-[1.03] text-accent"
-                  : "text-zinc-900 dark:text-zinc-50")
+                "mt-5 text-center text-balance text-4xl font-bold leading-tight tracking-tight text-accent transition-transform duration-300 sm:text-5xl " +
+                (flash ? "scale-[1.04]" : "scale-100")
               }
             >
               {prompt.term}
