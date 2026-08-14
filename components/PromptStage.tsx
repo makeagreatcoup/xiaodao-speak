@@ -446,6 +446,16 @@ export function PromptStage() {
       id="stage"
       className="relative mx-auto flex min-h-screen max-w-3xl flex-col items-center justify-center px-4 py-8 sm:px-6"
     >
+      {/* 导入词库：极简图标入口，不写说明、不占主视觉 */}
+      <button
+        onClick={() => setImportOpen(true)}
+        aria-label="导入词库"
+        title="导入词库"
+        className="fixed right-4 top-4 z-40 inline-flex h-10 w-10 items-center justify-center rounded-full border border-zinc-200 bg-white/80 text-zinc-500 backdrop-blur transition-colors hover:text-accent dark:border-zinc-800 dark:bg-zinc-900/80 dark:text-zinc-400"
+      >
+        <UploadIcon className="h-4 w-4" />
+      </button>
+
       {/* 命题卡：大词 + 轮盘，整屏居中核心 */}
       <div className="relative w-full">
         <div
