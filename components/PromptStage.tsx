@@ -198,7 +198,14 @@ export function PromptStage() {
 
   // 轮盘滚动动画：快速掠过 → 缓动减速定格 + 模糊→清晰；减弱动效时由 drawFromPool 直接定格
   useEffect(() => {
-    if (!spinning || reelSeq.length === 0 || !reelRef.current) return;
+    if (!spinning || reelSeq.length === 0 || !reelFinal) return;
+    if (!reelRef.current) {
+      // 兜底：没有可滚动的 DOM 就直接定格，避免 spinning 卡死整个面板
+      setSpinning(false);
+      setPrompt(reelFinal);
+      setReelSeq([]);
+      return;
+    }
     const el = reelRef.current;
     const N = reelSeq.length;
     const start = performance.now();
@@ -566,29 +573,27 @@ export function PromptStage() {
             <span className="text-xs text-zinc-400">{activeMeta.tag}</span>
           </div>
 
-          {prompt ? (
-            spinning ? (
-              <div className="reel-window mt-5" aria-live="polite">
-                <div ref={reelRef} className="reel-col">
-                  {reelSeq.map((w, i) => (
-                    <div key={i} className="reel-row">
-                      {w}
-                    </div>
-                  ))}
-                </div>
+          {spinning ? (
+            <div className="reel-window mt-5" aria-live="polite">
+              <div ref={reelRef} className="reel-col">
+                {reelSeq.map((w, i) => (
+                  <div key={i} className="reel-row">
+                    {w}
+                  </div>
+                ))}
               </div>
-            ) : (
-              <p
-                className={
-                  "mt-5 text-balance text-4xl font-bold leading-tight tracking-tight transition-[color,transform] duration-300 sm:text-5xl " +
-                  (flash
-                    ? "scale-[1.03] text-accent"
-                    : "text-zinc-900 dark:text-zinc-50")
-                }
-              >
-                {prompt.term}
-              </p>
-            )
+            </div>
+          ) : prompt ? (
+            <p
+              className={
+                "mt-5 text-balance text-4xl font-bold leading-tight tracking-tight transition-[color,transform] duration-300 sm:text-5xl " +
+                (flash
+                  ? "scale-[1.03] text-accent"
+                  : "text-zinc-900 dark:text-zinc-50")
+              }
+            >
+              {prompt.term}
+            </p>
           ) : (
             <p className="mt-5 text-2xl font-semibold leading-snug text-zinc-400">
               {emptyReason === "no-custom"
