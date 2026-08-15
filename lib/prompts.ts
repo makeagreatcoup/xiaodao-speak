@@ -18,49 +18,68 @@ export interface Category {
   blurb: string;
 }
 
-// 从真实源提取、经筛选保留的「深奥 / 非日常」主题与话题，见 lib/seed-topics.ts
+// 按「真实学科」组织的概念集，主题=学科、话题=该学科里真实存在的概念，见 lib/seed-topics.ts
 import { seedTopics } from "./seed-topics";
 
 // 展示用分类（不含 custom，custom 由本地存储动态驱动）
-// 全部来自真实源：交谈话题.html（unprompted.cool 中文克隆）、Buster Benson 认知偏误清单、
-// awesome-mental-models / 查理·芒格思维模型、正统学科标准概念集。
+// 全部是标准学科，话题均取自各学科真实概念表：
+//  · 心理学 —— Buster Benson《Cognitive Bias Cheat Sheet》认知偏误体系
+//  · 哲学 / 经济学 / 社会学 / 科学 / 历史学 / 逻辑与数学 / 语言学 —— 各学科标准概念与议题
 export const categories: Category[] = [
   {
-    key: "deep-research",
-    name: "深度研究",
-    tag: "认知偏误",
-    blurb: "认知偏误、社会心理、博弈悖论——先把资料查透，再开口做一场有东西的演讲。",
-  },
-  {
-    key: "literature",
-    name: "文学",
-    tag: "读进去",
-    blurb: "小说、诗歌、意象，把文字里的东西讲给人听。",
-  },
-  {
-    key: "mental-models",
-    name: "思维模型",
-    tag: "想清楚",
-    blurb: "第一性原理、二阶思维、奥卡姆剃刀……用多学科框架把世界想明白。",
-  },
-  {
     key: "philosophy",
-    name: "哲学概念",
+    name: "哲学",
     tag: "烧脑两难",
     blurb: "存在主义、自由意志、缸中之脑——没有标准答案，最适合练「把道理讲圆」。",
   },
   {
-    key: "science-frontier",
-    name: "科学前沿",
+    key: "psychology",
+    name: "心理学",
+    tag: "认知偏误",
+    blurb: "锚定、确认偏误、幸存者偏差——先把人脑的坑查明白，再开口。",
+  },
+  {
+    key: "economics",
+    name: "经济学",
+    tag: "理性选择",
+    blurb: "机会成本、博弈论、信息不对称——用稀缺与激励的透镜看世界。",
+  },
+  {
+    key: "sociology",
+    name: "社会学",
+    tag: "社会结构",
+    blurb: "科层制、差序格局、沉默的螺旋——把人与群体的运行规律讲清楚。",
+  },
+  {
+    key: "science",
+    name: "科学",
     tag: "硬核概念",
-    blurb: "从熵到量子纠缠，挑一个你半懂不懂的，查明白再开口。",
+    blurb: "熵、量子纠缠、自然选择——挑一个你半懂不懂的，查明白再开口。",
+  },
+  {
+    key: "history",
+    name: "历史学",
+    tag: "读懂过去",
+    blurb: "工业革命、文艺复兴、冷战——把一个时代的前因后果讲给人听。",
+  },
+  {
+    key: "logic-math",
+    name: "逻辑与数学",
+    tag: "思维体操",
+    blurb: "芝诺悖论、哥德尔不完备、蒙提霍尔——在严密与反直觉之间练脑子。",
+  },
+  {
+    key: "linguistics",
+    name: "语言学",
+    tag: "语言密码",
+    blurb: "萨丕尔-沃尔夫、生成语法、声调语言——揭开人类最神奇的工具。",
   },
 
   {
     key: "all",
     name: "随机全场",
     tag: "全池混抽",
-    blurb: "几块场子混在一起，抽到谁算谁，主打一个大量随机。",
+    blurb: "八块场子混在一起，抽到谁算谁，主打一个大量随机。",
   },
 ];
 
@@ -91,7 +110,7 @@ export function categoryMeta(key: string): Category {
 }
 
 // ===== 个人词库 =====
-// 个人词库的每个词可带一个领域标签（深度研究 / 文学 / 思维模型 / 哲学概念 / 科学前沿 / 自命题），
+// 个人词库的每个词可带一个领域标签（哲学 / 心理学 / 经济学 / 社会学 / 科学 / 历史学 / 逻辑与数学 / 语言学 / 自命题），
 // 导入时指定；抽「随机全场」会混进所有上传词，抽具体领域只会混入该领域的上传词。
 // id 由词本身推导，保证跨会话去重稳定。
 const CUSTOM_PREFIX = "custom::";
