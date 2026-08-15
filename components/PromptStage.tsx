@@ -205,9 +205,11 @@ export function PromptStage() {
         for (const x of e) {
           let rec: ExpressedRecord;
           if (typeof x === "string") {
-            // 旧版：localStorage 里只存了 id
+            // 旧版：localStorage 里只存了 id。合并重编号后这些旧 id 已对不上词库，
+            // 查不到真实词名就直接丢弃，绝不把原始 id 当名字显示出来。
             const m = META_BY_ID.get(x);
-            rec = { id: x, term: m?.term ?? x, category: m?.category ?? "—" };
+            if (!m) continue;
+            rec = { id: x, term: m.term, category: m.category };
           } else if (x && typeof x === "object" && "id" in (x as object)) {
             const o = x as Partial<ExpressedRecord>;
             const id = o.id ?? "";
@@ -535,20 +537,8 @@ export function PromptStage() {
       id="stage"
       className="relative mx-auto flex min-h-screen max-w-2xl flex-col items-center justify-center px-4 py-6 sm:px-6"
     >
-      {/* 右上角：常驻「已表达 N」入口 + 设置入口 */}
+      {/* 右上角：设置入口（已表达可在设置里查看，主屏不挂徽标） */}
       <div className="fixed right-4 top-4 z-40 flex items-center gap-2">
-        <button
-          onClick={() => {
-            setSettingsTab("expressed");
-            setSettingsOpen(true);
-          }}
-          aria-label="已表达"
-          title="查看已表达"
-          className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white/80 px-3 py-2 text-sm font-medium text-zinc-600 shadow-sm backdrop-blur transition-colors hover:text-accent dark:border-zinc-800 dark:bg-zinc-900/80 dark:text-zinc-300"
-        >
-          <CheckIcon className="h-4 w-4" />
-          已表达 {expressedRecords.length}
-        </button>
         <button
           onClick={() => setSettingsOpen(true)}
           aria-label="设置"
