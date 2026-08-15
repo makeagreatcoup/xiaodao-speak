@@ -22,95 +22,29 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-/* 抽题轮盘（老虎机式滚动） */
+/* 抽题词：直接显示，无滚动 / 无模糊 / 无回弹放大，只做极轻淡入 */
 .reel-window {
-  position: relative;
-  height: 240px; /* 与 PromptStage 的 REEL_ROW 一致（展示用，放大） */
-  overflow: hidden;
-  border-radius: 28px;
-}
-/* 渐隐遮罩只在滚动时生效；定格后去掉，否则会洗白大词的上/下三分之一 */
-.reel-window.is-spinning::before,
-.reel-window.is-spinning::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 64px;
-  z-index: 2;
-  pointer-events: none;
-}
-.reel-window.is-spinning::before {
-  top: 0;
-  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0));
-}
-.reel-window.is-spinning::after {
-  bottom: 0;
-  background: linear-gradient(to top, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0));
-}
-.dark .reel-window.is-spinning::before {
-  background: linear-gradient(to bottom, rgba(24, 24, 27, 0.92), rgba(24, 24, 27, 0));
-}
-.dark .reel-window.is-spinning::after {
-  background: linear-gradient(to top, rgba(24, 24, 27, 0.92), rgba(24, 24, 27, 0));
-}
-.reel-col {
-  will-change: transform, filter;
-}
-.reel-row {
-  height: 240px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: clamp(3.5rem, 9vw, 7rem);
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  color: #18181b;
+  min-height: 200px;
 }
-/* 定格词：与滚动窗同高同字号，选中后不挪位、不缩高 */
 .reel-word {
-  height: 240px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: clamp(3.5rem, 9vw, 7.5rem);
+  font-size: clamp(3.25rem, 8.5vw, 7rem);
   font-weight: 700;
   letter-spacing: -0.01em;
   color: var(--color-accent);
-  /* 锁定：从中性色平滑过渡到主题红 + 辉光渐入，不再是生硬切换 */
-  animation: lockIn 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: wordIn 0.35s ease both;
 }
-@keyframes lockIn {
-  0% {
-    color: #18181b;
-    text-shadow: 0 0 0 rgba(255, 75, 51, 0);
-    transform: scale(0.92);
+@keyframes wordIn {
+  from {
+    opacity: 0;
   }
-  55% {
-    transform: scale(1.05);
-  }
-  100% {
-    color: var(--color-accent);
-    text-shadow: 0 0 30px rgba(255, 75, 51, 0.5);
-    transform: scale(1);
-  }
-}
-.dark .reel-word {
-  animation-name: lockInDark;
-}
-@keyframes lockInDark {
-  0% {
-    color: #fafafa;
-    text-shadow: 0 0 0 rgba(255, 75, 51, 0);
-    transform: scale(0.92);
-  }
-  55% {
-    transform: scale(1.05);
-  }
-  100% {
-    color: var(--color-accent);
-    text-shadow: 0 0 36px rgba(255, 75, 51, 0.65);
-    transform: scale(1);
+  to {
+    opacity: 1;
   }
 }
 .reel-word--empty {
@@ -119,9 +53,6 @@ body {
 }
 .dark .reel-word--empty {
   color: #71717a;
-}
-.dark .reel-row {
-  color: #fafafa;
 }
 
 /* Respect reduced motion at the CSS level too */

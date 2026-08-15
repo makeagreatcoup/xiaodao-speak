@@ -21,18 +21,6 @@ import {
   type Prompt,
 } from "@/lib/prompts";
 
-function usePrefersReducedMotion() {
-  const [reduce, setReduce] = useState(false);
-  useEffect(() => {
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    setReduce(mq.matches);
-    const handler = () => setReduce(mq.matches);
-    mq.addEventListener("change", handler);
-    return () => mq.removeEventListener("change", handler);
-  }, []);
-  return reduce;
-}
-
 const RESEARCH_DURATIONS = [
   { label: "5 分钟", value: 5 * 60 },
   { label: "10 分钟", value: 10 * 60 },
@@ -48,10 +36,6 @@ const SPEAK_DURATIONS = [
 
 const EXP_KEY = "xd-expressed";
 const CUSTOM_KEY = "xd-custom";
-
-const REEL_ROW = 240; // 单行高度，需与 globals.css 的 .reel-row 一致（展示用，放大）
-const REEL_ROUNDS = 26; // 轮盘掠过的候选词数量
-const REEL_DURATION = 2300; // 轮盘滚动时长 ms
 
 function pickRandom<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
@@ -82,30 +66,9 @@ function buildPool(
   return includeExpressed ? base : base.filter((p) => !expressed.has(p.id));
 }
 
-// 生成轮盘序列：快速掠过候选词，最后一格定格在抽中的词
-function buildReel(pool: Prompt[], final: Prompt, rows: number): string[] {
-  const terms = pool.map((p) => p.term);
-  const seq: string[] = [];
-  let last = "";
-  for (let i = 0; i < rows; i++) {
-    let t = terms[Math.floor(Math.random() * terms.length)];
-    let guard = 0;
-    while (t === last && terms.length > 1 && guard < 8) {
-      t = terms[Math.floor(Math.random() * terms.length)];
-      guard += 1;
-    }
-    seq.push(t);
-    last = t;
-  }
-  seq[rows - 1] = final.term;
-  return seq;
-}
-
 export function PromptStage() {
-  const reduce = usePrefersReducedMotion();
   const [cat, setCat] = useState<CategoryKey>("all");
   const [prompt, setPrompt] = useState<Prompt | null>(null);
-  const [spinning, setSpinning] = useState(false);
 
   const [customTerms, setCustomTerms] = useState<string[]>([]);
   const [expressed, setExpressed] = useState<Set<string>>(new Set());
@@ -119,12 +82,6 @@ export function PromptStage() {
   const [researchDuration, setResearchDuration] = useState(10 * 60);
   const [speakDuration, setSpeakDuration] = useState(60);
   const [left, setLeft] = useState(60);
-
-  // 轮盘动画状态
-  const [reelSeq, setReelSeq] = useState<string[]>([]);
-  const [reelFinal, setReelFinal] = useState<Prompt | null>(null);
-  const reelRef = useRef<HTMLDivElement | null>(null);
-  const rafRef = useRef<number | null>(null);
 
   // 批量导入弹层
   const [importOpen, setImportOpen] = useState(false);
@@ -141,9 +98,7 @@ export function PromptStage() {
     () =>
       parsed.filter((t) => {
         const k = t.toLowerCase();
-        return (
-          customTerms.some((c) => c.toLowerCase() === k) || builtinTerms.has(k)
-        );
+        return customTerms.some((c) => c.toLowerCase() === k) || builtinTerms.has(k);
       }),
     [parsed, customTerms, builtinTerms],
   );
@@ -152,7 +107,7 @@ export function PromptStage() {
     [parsed, importDupes],
   );
 
-  // 载入本地存储：已表达 + 个人词库，并完成首抽（首抽不动画，直接定格）
+  // 载入本地存储：已表达 + 个人词库，并完成首抽（直接定格，无动画）
   useEffect(() => {
     let exp: Set<string> = new Set();
     let cust: string[] = [];
@@ -188,86 +143,22 @@ export function PromptStage() {
   useEffect(() => {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
   }, []);
-
-  // 轮盘滚动动画：快速掠过 → 缓动减速定格 + 模糊→清晰；减弱动效时由 drawFromPool 直接定格
-  useEffect(() => {
-    if (!spinning || reelSeq.length === 0 || !reelFinal) return;
-    if (!reelRef.current) {
-      // 兜底：没有可滚动的 DOM 就直接定格，避免 spinning 卡死整个面板
-      setSpinning(false);
-      setPrompt(reelFinal);
-      setReelSeq([]);
-      return;
-    }
-    const el = reelRef.current;
-    const N = reelSeq.length;
-    const start = performance.now();
-    const easeOut = (p: number) => 1 - Math.pow(1 - p, 3);
-    const SETTLE = 0.8; // 最后 20% 做回弹落定，像真老虎机
-    const tick = (now: number) => {
-      const p = Math.min(1, (now - start) / REEL_DURATION);
-      let rowFloat = easeOut(p) * (N - 1);
-      if (p > SETTLE) {
-        const q = (p - SETTLE) / (1 - SETTLE); // 0..1
-        const bounce = Math.sin(q * Math.PI) * 0.5 * Math.pow(1 - q, 1.2);
-        rowFloat = (N - 1) + bounce; // q=1 时 bounce=0，精确落定在 N-1
-      }
-      const ty = -rowFloat * REEL_ROW;
-      const speed = 3 * Math.pow(1 - p, 2); // 导数幅度：开头快、结尾 0
-      const blur = Math.min(4, speed * 1.6);
-      el.style.transform = `translateY(${ty}px)`;
-      el.style.filter = blur > 0.2 ? `blur(${blur}px)` : "none";
-      if (p < 1) {
-        rafRef.current = requestAnimationFrame(tick);
-      } else {
-        el.style.transform = "none";
-        el.style.filter = "none";
-        rafRef.current = null;
-        setSpinning(false);
-        setPrompt(reelFinal);
-        setReelSeq([]);
-      }
-    };
-    rafRef.current = requestAnimationFrame(tick);
-    return () => {
-      if (rafRef.current) {
-        cancelAnimationFrame(rafRef.current);
-        rafRef.current = null;
-      }
-    };
-  }, [spinning, reelSeq, reelFinal]);
 
   function clearTimers() {
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
-    if (rafRef.current) {
-      cancelAnimationFrame(rafRef.current);
-      rafRef.current = null;
-    }
   }
 
   function drawFromPool(pool: Prompt[]) {
     if (pool.length === 0) {
       setPrompt(null);
-      setSpinning(false);
-      setReelSeq([]);
       return;
     }
-    const final = pickRandom(pool);
-    if (reduce) {
-      setPrompt(final);
-      setSpinning(false);
-      setReelSeq([]);
-      return;
-    }
-    setReelFinal(final);
-    setReelSeq(buildReel(pool, final, REEL_ROUNDS));
-    setSpinning(true);
+    setPrompt(pickRandom(pool));
   }
 
   function spin() {
@@ -279,8 +170,6 @@ export function PromptStage() {
     if (pool.length === 0) {
       setEmptyReason(cat === "custom" ? "no-custom" : "all-done");
       setPrompt(null);
-      setSpinning(false);
-      setReelSeq([]);
       return;
     }
     setEmptyReason("none");
@@ -298,8 +187,6 @@ export function PromptStage() {
     if (pool.length === 0) {
       setEmptyReason(next === "custom" ? "no-custom" : "all-done");
       setPrompt(null);
-      setSpinning(false);
-      setReelSeq([]);
       return;
     }
     setEmptyReason("none");
@@ -317,8 +204,6 @@ export function PromptStage() {
       setEmptyReason("all-done");
       setPrompt(null);
       setPhase("idle");
-      setSpinning(false);
-      setReelSeq([]);
       return;
     }
     setEmptyReason("none");
@@ -427,8 +312,6 @@ export function PromptStage() {
     const total = phase === "research" ? researchDuration : speakDuration;
     return total > 0 ? (left / total) * 100 : 0;
   })();
-  const ringR = 78;
-  const circ = 2 * Math.PI * ringR;
   const lowTime = (phase === "research" || phase === "speak") && running && left <= 10;
 
   const phaseLabel =
@@ -456,7 +339,7 @@ export function PromptStage() {
   return (
     <section
       id="stage"
-      className="relative mx-auto flex min-h-screen max-w-3xl flex-col items-center justify-center px-4 py-8 sm:px-6"
+      className="relative mx-auto flex min-h-screen max-w-2xl flex-col items-center justify-center px-4 py-6 sm:px-6"
     >
       {/* 导入词库：极简图标入口，不写说明、不占主视觉 */}
       <button
@@ -468,8 +351,8 @@ export function PromptStage() {
         <UploadIcon className="h-4 w-4" />
       </button>
 
-      {/* 头部：站点名 + 一句话说明（参考 unprompted.cool 的 header） */}
-      <header className="mb-5 text-center">
+      {/* 头部：站点名 + 一句话说明 */}
+      <header className="mb-4 text-center">
         <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
           小导片场
           <span className="ml-2 align-middle text-sm font-semibold text-accent">
@@ -481,8 +364,8 @@ export function PromptStage() {
         </p>
       </header>
 
-      {/* 命题分类：随机全场 + 内置 4 领域 + 我的命题（对应参考站的 General 分类选择） */}
-      <div className="mb-6 flex flex-wrap justify-center gap-2">
+      {/* 命题分类：随机全场 + 内置 4 领域 + 我的命题 */}
+      <div className="mb-5 flex flex-wrap justify-center gap-2">
         {categories.map((c) => {
           const active = c.key === cat;
           const isAll = c.key === "all";
@@ -518,55 +401,37 @@ export function PromptStage() {
         )}
       </div>
 
-      {/* 命题卡：大词 + 轮盘，整屏居中核心 */}
+      {/* 命题卡：大词，整屏居中核心，直接显示（无滚动 / 无模糊 / 无回弹） */}
       <div className="relative w-full">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -inset-10 -z-10 rounded-[3rem] bg-accent/10 blur-3xl"
-        />
         <div className="rounded-3xl border border-zinc-200 bg-white p-6 text-center shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:p-8">
-          {/* 固定高度窗：滚动与定格共用，杜绝选中后整块上移；is-spinning 时才显遮罩 */}
-          <div
-            className={"reel-window mx-auto" + (spinning ? " is-spinning" : "")}
-            aria-live="polite"
-          >
-            {spinning ? (
-              <div key="reel-col" ref={reelRef} className="reel-col">
-                {reelSeq.map((w, i) => (
-                  <div key={i} className="reel-row">
-                    {w}
-                  </div>
-                ))}
-              </div>
-            ) : prompt ? (
-              <div key="reel-word" className="reel-word">
+          <div className="reel-window mx-auto" aria-live="polite">
+            {prompt ? (
+              <div key={prompt.id} className="reel-word">
                 {prompt.term}
               </div>
             ) : (
-              <div key="reel-empty" className="reel-word reel-word--empty">
-                抽一个词
-              </div>
+              <div className="reel-word reel-word--empty">抽一个词</div>
             )}
           </div>
 
-          {/* 极简阶段提示：随阶段变化的一行小字，告诉观众现在在干嘛 */}
+          {/* 极简阶段提示 */}
           <p className="mt-3 text-sm text-zinc-400 dark:text-zinc-500">{hint}</p>
         </div>
       </div>
 
-      {/* 时间设置：查资料时间 / 表达时间 分两个独立区块（对应参考站 Start 1 min timer 的参数化） */}
-      <div className="mt-6 flex w-full max-w-md flex-col gap-3">
-        <div className="flex flex-col items-center gap-2 rounded-2xl border border-zinc-200 bg-zinc-50/60 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-900/40">
-          <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
-            查资料时间
-          </span>
-          <div className="flex flex-wrap items-center justify-center gap-2">
+      {/* 时间选择：紧凑写下面，查资料 / 表达 两组小按钮在一个区块里 */}
+      <div className="mt-5 w-full max-w-xl">
+        <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 rounded-2xl border border-zinc-200 bg-zinc-50/60 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-900/40">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
+              查资料
+            </span>
             {RESEARCH_DURATIONS.map((d) => (
               <button
                 key={d.value}
                 onClick={() => changeResearch(d.value)}
                 className={
-                  "rounded-full px-3 py-1.5 text-xs font-medium transition-colors " +
+                  "rounded-full px-3 py-1 text-xs font-medium transition-colors " +
                   (d.value === researchDuration
                     ? "bg-accent text-accent-fg"
                     : "text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900")
@@ -576,18 +441,16 @@ export function PromptStage() {
               </button>
             ))}
           </div>
-        </div>
-        <div className="flex flex-col items-center gap-2 rounded-2xl border border-zinc-200 bg-zinc-50/60 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-900/40">
-          <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
-            表达时间
-          </span>
-          <div className="flex flex-wrap items-center justify-center gap-2">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
+              表达
+            </span>
             {SPEAK_DURATIONS.map((d) => (
               <button
                 key={d.value}
                 onClick={() => changeSpeak(d.value)}
                 className={
-                  "rounded-full px-3 py-1.5 text-xs font-medium transition-colors " +
+                  "rounded-full px-3 py-1 text-xs font-medium transition-colors " +
                   (d.value === speakDuration
                     ? "bg-accent text-accent-fg"
                     : "text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900")
@@ -600,139 +463,126 @@ export function PromptStage() {
         </div>
       </div>
 
-      {/* 计时环 + 控制 */}
-      <div className="mt-8 flex flex-col items-center">
-        <div className="relative h-[220px] w-[220px]">
-          <svg viewBox="0 0 180 180" className="h-full w-full -rotate-90" aria-hidden>
-            <circle
-              cx="90"
-              cy="90"
-              r={ringR}
-              fill="none"
-              strokeWidth="9"
-              className="stroke-zinc-200 dark:stroke-zinc-800"
-            />
-            <circle
-              cx="90"
-              cy="90"
-              r={ringR}
-              fill="none"
-              strokeWidth="9"
-              strokeLinecap="round"
-              strokeDasharray={circ}
-              strokeDashoffset={circ * (1 - pct / 100)}
-              className="stroke-accent"
-              style={{ transition: reduce ? "none" : "stroke-dashoffset 1s linear" }}
-            />
-          </svg>
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            {phase === "done" ? (
-              <span className="text-3xl font-bold text-accent">讲完啦</span>
-            ) : (
-              <span
-                className={
-                  "font-mono text-6xl font-semibold tabular-nums tracking-tight " +
-                  (lowTime ? "text-accent" : "text-zinc-900 dark:text-zinc-50")
-                }
-              >
-                {fmt(left)}
-              </span>
-            )}
-            <span className="mt-1 text-xs text-zinc-400">{phaseLabel}</span>
-          </div>
+      {/* 计时：左右两个时间 + 线性进度条（无圆形环） */}
+      <div className="mt-5 w-full max-w-md">
+        <div className="flex items-center justify-between text-xs font-medium text-zinc-500 dark:text-zinc-400">
+          <span>查资料 {fmt(researchDuration)}</span>
+          <span>表达 {fmt(speakDuration)}</span>
         </div>
-
-        {/* 主控制按钮 */}
-        <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
-          {phase === "idle" && (
-            <button
-              onClick={startResearch}
-              disabled={!prompt || spinning}
-              className="inline-flex items-center gap-2 rounded-full bg-accent px-7 py-3 font-semibold text-accent-fg transition-transform hover:-translate-y-px active:translate-y-0 disabled:opacity-50"
+        <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
+          <div
+            className="h-full rounded-full bg-accent"
+            style={{
+              width: `${pct}%`,
+              transition: "width 1s linear",
+            }}
+          />
+        </div>
+        <div className="mt-2 text-center">
+          {phase === "done" ? (
+            <span className="text-2xl font-bold text-accent">讲完啦</span>
+          ) : (
+            <span
+              className={
+                "font-mono text-4xl font-semibold tabular-nums tracking-tight " +
+                (lowTime ? "text-accent" : "text-zinc-900 dark:text-zinc-50")
+              }
             >
-              <MagnifyingGlassIcon className="h-4 w-4" />
-              开始查资料
+              {fmt(left)}
+            </span>
+          )}
+          <span className="ml-2 text-xs text-zinc-400">{phaseLabel}</span>
+        </div>
+      </div>
+
+      {/* 主控制按钮 */}
+      <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+        {phase === "idle" && (
+          <button
+            onClick={startResearch}
+            disabled={!prompt}
+            className="inline-flex items-center gap-2 rounded-full bg-accent px-7 py-3 font-semibold text-accent-fg transition-transform hover:-translate-y-px active:translate-y-0 disabled:opacity-50"
+          >
+            <MagnifyingGlassIcon className="h-4 w-4" />
+            开始查资料
+          </button>
+        )}
+
+        {phase === "research" && (
+          <>
+            <button
+              onClick={toggleRunning}
+              className="inline-flex items-center gap-2 rounded-full border border-zinc-300 px-5 py-3 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-900"
+            >
+              <StopIcon className="h-4 w-4" />
+              {running ? "暂停" : "继续"}
             </button>
-          )}
-
-          {phase === "research" && (
-            <>
-              <button
-                onClick={toggleRunning}
-                className="inline-flex items-center gap-2 rounded-full border border-zinc-300 px-5 py-3 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-900"
-              >
-                <StopIcon className="h-4 w-4" />
-                {running ? "暂停" : "继续"}
-              </button>
-              <button
-                onClick={startSpeak}
-                className="inline-flex items-center gap-2 rounded-full bg-accent px-7 py-3 font-semibold text-accent-fg transition-transform hover:-translate-y-px active:translate-y-0"
-              >
-                不查了，直接开讲
-              </button>
-            </>
-          )}
-
-          {phase === "ready" && (
             <button
               onClick={startSpeak}
               className="inline-flex items-center gap-2 rounded-full bg-accent px-7 py-3 font-semibold text-accent-fg transition-transform hover:-translate-y-px active:translate-y-0"
             >
-              <SpeakerLoudIcon className="h-4 w-4" />
-              开讲
+              不查了，直接开讲
             </button>
-          )}
+          </>
+        )}
 
-          {phase === "speak" && (
-            <button
-              onClick={toggleRunning}
-              className="inline-flex items-center gap-2 rounded-full bg-accent px-7 py-3 font-semibold text-accent-fg transition-transform hover:-translate-y-px active:translate-y-0"
-            >
-              {running ? (
-                <>
-                  <StopIcon className="h-4 w-4" />
-                  暂停
-                </>
-              ) : (
-                <>
-                  <PlayIcon className="h-4 w-4" />
-                  继续
-                </>
-              )}
-            </button>
-          )}
+        {phase === "ready" && (
+          <button
+            onClick={startSpeak}
+            className="inline-flex items-center gap-2 rounded-full bg-accent px-7 py-3 font-semibold text-accent-fg transition-transform hover:-translate-y-px active:translate-y-0"
+          >
+            <SpeakerLoudIcon className="h-4 w-4" />
+            开讲
+          </button>
+        )}
 
-          {phase === "done" && (
-            <button
-              onClick={markDone}
-              className="inline-flex items-center gap-2 rounded-full bg-accent px-7 py-3 font-semibold text-accent-fg transition-transform hover:-translate-y-px active:translate-y-0"
-            >
-              <CheckIcon className="h-4 w-4" />
-              标记已表达，换下一个
-            </button>
-          )}
+        {phase === "speak" && (
+          <button
+            onClick={toggleRunning}
+            className="inline-flex items-center gap-2 rounded-full bg-accent px-7 py-3 font-semibold text-accent-fg transition-transform hover:-translate-y-px active:translate-y-0"
+          >
+            {running ? (
+              <>
+                <StopIcon className="h-4 w-4" />
+                暂停
+              </>
+            ) : (
+              <>
+                <PlayIcon className="h-4 w-4" />
+                继续
+              </>
+            )}
+          </button>
+        )}
 
-          {(phase === "research" || phase === "ready" || phase === "speak") && (
-            <button
-              onClick={spin}
-              disabled={spinning}
-              className="inline-flex items-center gap-2 rounded-full border border-zinc-300 px-5 py-3 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-900"
-            >
-              <ReloadIcon className="h-4 w-4" />
-              换命题
-            </button>
-          )}
-          {(phase === "idle" || phase === "done") && (
-            <button
-              onClick={spin}
-              disabled={spinning}
-              className="inline-flex items-center gap-2 rounded-full border border-zinc-300 px-5 py-3 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-900"
-            >
-              <ReloadIcon className="h-4 w-4" />
-              抽命题
-            </button>
-          )}
-        </div>
+        {phase === "done" && (
+          <button
+            onClick={markDone}
+            className="inline-flex items-center gap-2 rounded-full bg-accent px-7 py-3 font-semibold text-accent-fg transition-transform hover:-translate-y-px active:translate-y-0"
+          >
+            <CheckIcon className="h-4 w-4" />
+            标记已表达，换下一个
+          </button>
+        )}
+
+        {(phase === "research" || phase === "ready" || phase === "speak") && (
+          <button
+            onClick={spin}
+            className="inline-flex items-center gap-2 rounded-full border border-zinc-300 px-5 py-3 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-900"
+          >
+            <ReloadIcon className="h-4 w-4" />
+            换命题
+          </button>
+        )}
+        {(phase === "idle" || phase === "done") && (
+          <button
+            onClick={spin}
+            className="inline-flex items-center gap-2 rounded-full border border-zinc-300 px-5 py-3 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-900"
+          >
+            <ReloadIcon className="h-4 w-4" />
+            抽命题
+          </button>
+        )}
       </div>
 
       {/* 批量导入弹层 */}
