@@ -364,22 +364,8 @@ export function PromptStage() {
     }
   }
 
-  const pct = (() => {
-    const total = phase === "research" ? researchDuration : speakDuration;
-    return total > 0 ? (left / total) * 100 : 0;
-  })();
-  const lowTime = (phase === "research" || phase === "speak") && running && left <= 10;
-
-  const phaseLabel =
-    phase === "research"
-      ? "查资料中"
-      : phase === "ready"
-        ? "查完了，待开讲"
-        : phase === "speak"
-          ? "开讲中"
-          : phase === "done"
-            ? "这段讲完了"
-            : "准备就绪";
+  const researchShown = phase === "research" ? left : researchDuration;
+  const speakShown = phase === "speak" ? left : speakDuration;
 
   const hint =
     phase === "research"
@@ -485,8 +471,60 @@ export function PromptStage() {
         </div>
       </div>
 
-      {/* 时间选择：紧凑写下面，查资料 / 表达 两组小按钮在一个区块里 */}
-      <div className="mt-5 w-full max-w-xl">
+      {/* 计时：左右两个大号时间 —— 查资料动左、表达动右，无进度条 */}
+      <div className="mt-5 w-full max-w-lg">
+        <div className="flex items-stretch justify-center gap-3">
+          {/* 左：查资料时间 */}
+          <div
+            className={
+              "flex-1 rounded-2xl border px-3 py-3 text-center transition-colors " +
+              (phase === "research"
+                ? "border-accent bg-accent/5"
+                : "border-zinc-200 dark:border-zinc-800")
+            }
+          >
+            <div className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
+              查资料
+            </div>
+            <div
+              className={
+                "font-mono text-5xl font-bold tabular-nums tracking-tight sm:text-6xl " +
+                (phase === "research"
+                  ? "text-accent"
+                  : "text-zinc-900 dark:text-zinc-50")
+              }
+            >
+              {fmt(researchShown)}
+            </div>
+          </div>
+          {/* 右：表达时间 */}
+          <div
+            className={
+              "flex-1 rounded-2xl border px-3 py-3 text-center transition-colors " +
+              (phase === "speak"
+                ? "border-accent bg-accent/5"
+                : "border-zinc-200 dark:border-zinc-800")
+            }
+          >
+            <div className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
+              表达
+            </div>
+            <div
+              className={
+                "font-mono text-5xl font-bold tabular-nums tracking-tight sm:text-6xl " +
+                (phase === "speak"
+                  ? "text-accent"
+                  : "text-zinc-900 dark:text-zinc-50")
+              }
+            >
+              {fmt(speakShown)}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 时间选择：放在两个时间底下，查资料 / 表达 两组小按钮 */}
+      <div className="mt-3 w-full max-w-lg">
         <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 rounded-2xl border border-zinc-200 bg-zinc-50/60 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-900/40">
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
@@ -526,38 +564,6 @@ export function PromptStage() {
               </button>
             ))}
           </div>
-        </div>
-      </div>
-
-      {/* 计时：左右两个时间 + 线性进度条（无圆形环） */}
-      <div className="mt-5 w-full max-w-md">
-        <div className="flex items-center justify-between text-xs font-medium text-zinc-500 dark:text-zinc-400">
-          <span>查资料 {fmt(researchDuration)}</span>
-          <span>表达 {fmt(speakDuration)}</span>
-        </div>
-        <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
-          <div
-            className="h-full rounded-full bg-accent"
-            style={{
-              width: `${pct}%`,
-              transition: "width 1s linear",
-            }}
-          />
-        </div>
-        <div className="mt-2 text-center">
-          {phase === "done" ? (
-            <span className="text-2xl font-bold text-accent">讲完啦</span>
-          ) : (
-            <span
-              className={
-                "font-mono text-4xl font-semibold tabular-nums tracking-tight " +
-                (lowTime ? "text-accent" : "text-zinc-900 dark:text-zinc-50")
-              }
-            >
-              {fmt(left)}
-            </span>
-          )}
-          <span className="ml-2 text-xs text-zinc-400">{phaseLabel}</span>
         </div>
       </div>
 

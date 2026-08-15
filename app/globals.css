@@ -64,10 +64,12 @@ body {
   0% {
     color: #18181b;
     text-shadow: 0 0 0 rgba(255, 75, 51, 0);
+    transform: scale(1);
   }
   100% {
     color: var(--color-accent);
     text-shadow: 0 0 22px rgba(255, 75, 51, 0.45);
+    transform: scale(1.04);
   }
 }
 .dark .reel-row {
@@ -80,10 +82,12 @@ body {
   0% {
     color: #fafafa;
     text-shadow: 0 0 0 rgba(255, 75, 51, 0);
+    transform: scale(1);
   }
   100% {
     color: var(--color-accent);
     text-shadow: 0 0 26px rgba(255, 75, 51, 0.6);
+    transform: scale(1.04);
   }
 }
 .reel-word--empty {
