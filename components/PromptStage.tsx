@@ -556,9 +556,9 @@ export function PromptStage() {
             )}
           </div>
 
-          {/* 类型说明小字：滚动中保留抽题范围、本词类别留空，定格后填值 */}
+          {/* 类型说明小字：左对齐固定，滚动中保留抽题范围、本词类别留空，定格后填值（不重新居中、不横移） */}
           {typeCaption && (
-            <p className="mt-3 text-xs tracking-wide text-zinc-400 dark:text-zinc-500">
+            <p className="mt-3 text-left text-xs tracking-wide text-zinc-400 dark:text-zinc-500">
               {typeCaption}
             </p>
           )}
