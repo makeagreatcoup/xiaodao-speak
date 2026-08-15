@@ -25,6 +25,11 @@ import {
   type CustomPrompt,
 } from "@/lib/prompts";
 
+// id -> term 映射：用于「已表达」排除时按「词」去重，而不只是按 id。
+// 这样即使同一个概念在库里有两条记录（如心理学「后见之明偏差」与认知偏误「后见之明偏误」），
+// 只要说过其中一个，另一个也不会再被抽到。
+const TERM_BY_ID = new Map(prompts.map((p) => [p.id, p.term]));
+
 const RESEARCH_DURATIONS = [
   { label: "5 分钟", value: 5 * 60 },
   { label: "10 分钟", value: 10 * 60 },
@@ -97,7 +102,14 @@ function buildPool(
     const name = categoryMeta(cat).name;
     base = [...promptsFor(cat as CategoryKey), ...customPrompts.filter((p) => p.category === name)];
   }
-  return includeExpressed ? base : base.filter((p) => !expressed.has(p.id));
+  if (includeExpressed) return base;
+  // 按「词」排除已表达：说过这个 term，无论它有几条记录、属于哪个学科，都不再随机抽到
+  const expressedTerms = new Set(
+    [...expressed]
+      .map((id) => TERM_BY_ID.get(id))
+      .filter((t): t is string => Boolean(t)),
+  );
+  return base.filter((p) => !expressed.has(p.id) && !expressedTerms.has(p.term));
 }
 
 export function PromptStage() {
