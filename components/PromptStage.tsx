@@ -25,10 +25,12 @@ import {
   type CustomPrompt,
 } from "@/lib/prompts";
 
-// id -> term 映射：用于「已表达」排除时按「词」去重，而不只是按 id。
-// 这样即使同一个概念在库里有两条记录（如心理学「后见之明偏差」与认知偏误「后见之明偏误」），
-// 只要说过其中一个，另一个也不会再被抽到。
-const TERM_BY_ID = new Map(prompts.map((p) => [p.id, p.term]));
+// 「已表达」记录类型：把词本身（term + 学科）也存进 localStorage，
+// 这样即使将来种子 id 重新编号，记过的词也能在列表里显示，不再依赖 id 去词库反查。
+type ExpressedRecord = { id: string; term: string; category: string };
+
+// id -> { term, category } 映射：载入旧数据时反查词名用
+const META_BY_ID = new Map(prompts.map((p) => [p.id, { term: p.term, category: p.category }]));
 
 const RESEARCH_DURATIONS = [
   { label: "5 分钟", value: 5 * 60 },
@@ -79,7 +81,8 @@ function buildPool(
   cat: string,
   custom: CustomPrompt[],
   includeExpressed: boolean,
-  expressed: Set<string>,
+  expressedIds: Set<string>,
+  expressedTerms: Set<string>,
 ): Prompt[] {
   const customPrompts = custom.map((c) => makeCustomPrompt(c.term, c.category));
   let base: Prompt[];
@@ -104,12 +107,7 @@ function buildPool(
   }
   if (includeExpressed) return base;
   // 按「词」排除已表达：说过这个 term，无论它有几条记录、属于哪个学科，都不再随机抽到
-  const expressedTerms = new Set(
-    [...expressed]
-      .map((id) => TERM_BY_ID.get(id))
-      .filter((t): t is string => Boolean(t)),
-  );
-  return base.filter((p) => !expressed.has(p.id) && !expressedTerms.has(p.term));
+  return base.filter((p) => !expressedIds.has(p.id) && !expressedTerms.has(p.term));
 }
 
 export function PromptStage() {
@@ -117,7 +115,10 @@ export function PromptStage() {
   const [prompt, setPrompt] = useState<Prompt | null>(null);
 
   const [customTerms, setCustomTerms] = useState<CustomPrompt[]>([]);
-  const [expressed, setExpressed] = useState<Set<string>>(new Set());
+  // 「已表达」以记录数组为真源（含 id/词/学科），派生出 id 集合与词集合供抽词排除
+  const [expressedRecords, setExpressedRecords] = useState<ExpressedRecord[]>([]);
+  const expressed = useMemo(() => new Set(expressedRecords.map((r) => r.id)), [expressedRecords]);
+  const expressedTerms = useMemo(() => new Set(expressedRecords.map((r) => r.term)), [expressedRecords]);
   const [includeExpressed, setIncludeExpressed] = useState(false);
 
   // phase: idle | research | ready | speak | done
@@ -195,11 +196,32 @@ export function PromptStage() {
 
   // 载入本地存储：已表达 + 个人词库，并完成首抽（直接定格，无动画）
   useEffect(() => {
-    let exp: Set<string> = new Set();
+    let exp: ExpressedRecord[] = [];
     let cust: CustomPrompt[] = [];
     try {
       const e = JSON.parse(localStorage.getItem(EXP_KEY) || "[]");
-      if (Array.isArray(e)) exp = new Set(e as string[]);
+      if (Array.isArray(e)) {
+        const seen = new Set<string>();
+        for (const x of e) {
+          let rec: ExpressedRecord;
+          if (typeof x === "string") {
+            // 旧版：localStorage 里只存了 id
+            const m = META_BY_ID.get(x);
+            rec = { id: x, term: m?.term ?? x, category: m?.category ?? "—" };
+          } else if (x && typeof x === "object" && "id" in (x as object)) {
+            const o = x as Partial<ExpressedRecord>;
+            const id = o.id ?? "";
+            if (!id) continue;
+            const m = META_BY_ID.get(id);
+            rec = { id, term: o.term ?? m?.term ?? id, category: o.category ?? m?.category ?? "—" };
+          } else {
+            continue;
+          }
+          if (seen.has(rec.id)) continue;
+          seen.add(rec.id);
+          exp.push(rec);
+        }
+      }
     } catch {}
     try {
       const c = JSON.parse(localStorage.getItem(CUSTOM_KEY) || "[]");
@@ -224,14 +246,14 @@ export function PromptStage() {
           .filter((v): v is CustomPrompt => v !== null);
       }
     } catch {}
-    setExpressed(exp);
+    setExpressedRecords(exp);
     setCustomTerms(cust);
   }, []);
 
   // 持久化
   useEffect(() => {
-    localStorage.setItem(EXP_KEY, JSON.stringify([...expressed]));
-  }, [expressed]);
+    localStorage.setItem(EXP_KEY, JSON.stringify(expressedRecords));
+  }, [expressedRecords]);
   useEffect(() => {
     localStorage.setItem(CUSTOM_KEY, JSON.stringify(customTerms));
   }, [customTerms]);
@@ -300,7 +322,7 @@ export function PromptStage() {
     setPhase("idle");
     setRunning(false);
     setLeft(speakDuration);
-    const pool = buildPool(cat, customTerms, includeExpressed, expressed);
+    const pool = buildPool(cat, customTerms, includeExpressed, expressed, expressedTerms);
     if (pool.length === 0) {
       setEmptyReason(cat === "mine" || cat.startsWith("cat:") ? "no-custom" : "all-done");
       setPrompt(null);
@@ -320,7 +342,7 @@ export function PromptStage() {
     setPhase("idle");
     setRunning(false);
     setLeft(speakDuration);
-    const pool = buildPool(next, customTerms, includeExpressed, expressed);
+    const pool = buildPool(next, customTerms, includeExpressed, expressed, expressedTerms);
     if (pool.length === 0) {
       setEmptyReason(next === "mine" || next.startsWith("cat:") ? "no-custom" : "all-done");
       setPrompt(null);
@@ -332,11 +354,18 @@ export function PromptStage() {
 
   function markDone() {
     if (!prompt) return;
-    const nextExp = new Set(expressed);
-    nextExp.add(prompt.id);
-    setExpressed(nextExp);
-    // 抽下一题（已排除刚标记的）
-    const pool = buildPool(cat, customTerms, includeExpressed, nextExp);
+    // 记一条「已表达」记录（词本身也存进去，不再依赖 id 反查）
+    const rec: ExpressedRecord = { id: prompt.id, term: prompt.term, category: prompt.category };
+    setExpressedRecords((prev) => {
+      if (prev.some((r) => r.id === rec.id)) return prev;
+      return [...prev, rec];
+    });
+    // 抽下一题（已排除刚标记的）：用本地更新后的 id/词集合，保证本次抽题不重复
+    const nextExpIds = new Set(expressed);
+    nextExpIds.add(prompt.id);
+    const nextExpTerms = new Set(expressedTerms);
+    nextExpTerms.add(prompt.term);
+    const pool = buildPool(cat, customTerms, includeExpressed, nextExpIds, nextExpTerms);
     // 标记后回到空闲态：展示下一个词，由用户决定是否查资料 / 开讲
     setPhase("idle");
     setRunning(false);
@@ -353,17 +382,19 @@ export function PromptStage() {
   // 仅记为「已表达」，不自动抽下一题：计时归零时调用，停在 done 态由用户手动「抽命题」
   function markExpressedOnly() {
     if (!prompt) return;
-    const nextExp = new Set(expressed);
-    nextExp.add(prompt.id);
-    setExpressed(nextExp);
+    const rec: ExpressedRecord = { id: prompt.id, term: prompt.term, category: prompt.category };
+    setExpressedRecords((prev) => {
+      if (prev.some((r) => r.id === rec.id)) return prev;
+      return [...prev, rec];
+    });
     setPhase("done");
     setRunning(false);
   }
 
   // 清除全部「已表达」内容（localStorage 中的 xd-expressed 会随状态变更自动清空）
   function clearExpressed() {
-    if (expressed.size === 0) return;
-    setExpressed(new Set());
+    if (expressedRecords.length === 0) return;
+    setExpressedRecords([]);
   }
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -392,7 +423,7 @@ export function PromptStage() {
     setEmptyReason("none");
     // 若当前空闲，抽一个出来，立刻能练
     if (phase === "idle") {
-      const pool = buildPool(cat, next, includeExpressed, expressed);
+      const pool = buildPool(cat, next, includeExpressed, expressed, expressedTerms);
       if (pool.length > 0) drawFromPool(pool);
     }
   }
@@ -516,7 +547,7 @@ export function PromptStage() {
           className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white/80 px-3 py-2 text-sm font-medium text-zinc-600 shadow-sm backdrop-blur transition-colors hover:text-accent dark:border-zinc-800 dark:bg-zinc-900/80 dark:text-zinc-300"
         >
           <CheckIcon className="h-4 w-4" />
-          已表达 {expressed.size}
+          已表达 {expressedRecords.length}
         </button>
         <button
           onClick={() => setSettingsOpen(true)}
@@ -805,7 +836,7 @@ export function PromptStage() {
             className="inline-flex items-center gap-2 rounded-full bg-emerald-500/10 px-5 py-3 text-sm font-semibold text-emerald-600 transition-colors hover:bg-emerald-500/20 dark:text-emerald-400"
           >
             <CheckIcon className="h-4 w-4" />
-            已记为「已表达」：{prompt?.term}（累计 {expressed.size} 条 · 点此查看）
+            已记为「已表达」：{prompt?.term}（累计 {expressedRecords.length} 条 · 点此查看）
           </button>
         )}
 
@@ -987,7 +1018,7 @@ export function PromptStage() {
               {/* ===== 已表达：查看标记过的内容 ===== */}
               {settingsTab === "expressed" && (
                 <div>
-                  {expressed.size === 0 ? (
+                  {expressedRecords.length === 0 ? (
                     <p className="py-10 text-center text-sm text-zinc-400">
                       还没有标记过「已表达」的内容。抽到一个词、讲完等表达计时归零会自动记到这里；讲的过程中也能随时点「标记已表达，换下一个」。
                     </p>
@@ -995,7 +1026,7 @@ export function PromptStage() {
                     <div className="space-y-1.5">
                       <div className="mb-2 flex items-center justify-between">
                         <p className="text-xs text-zinc-400">
-                          共 {expressed.size} 条已表达
+                          共 {expressedRecords.length} 条已表达
                         </p>
                         <button
                           onClick={clearExpressed}
@@ -1004,21 +1035,19 @@ export function PromptStage() {
                           清除全部
                         </button>
                       </div>
-                      {allPrompts
-                        .filter((p) => expressed.has(p.id))
-                        .map((p) => (
-                          <div
-                            key={p.id}
-                            className="flex items-center justify-between gap-3 rounded-lg bg-zinc-50 px-3 py-2 dark:bg-zinc-800/60"
-                          >
-                            <span className="text-sm text-zinc-800 dark:text-zinc-100">
-                              {p.term}
-                            </span>
-                            <span className="shrink-0 rounded-full bg-accent/10 px-2 py-0.5 text-xs text-accent">
-                              {categoryMeta(p.category).name}
-                            </span>
-                          </div>
-                        ))}
+                      {expressedRecords.map((r) => (
+                        <div
+                          key={r.id}
+                          className="flex items-center justify-between gap-3 rounded-lg bg-zinc-50 px-3 py-2 dark:bg-zinc-800/60"
+                        >
+                          <span className="text-sm text-zinc-800 dark:text-zinc-100">
+                            {r.term}
+                          </span>
+                          <span className="shrink-0 rounded-full bg-accent/10 px-2 py-0.5 text-xs text-accent">
+                            {categories.find((c) => c.key === r.category)?.name ?? r.category}
+                          </span>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
