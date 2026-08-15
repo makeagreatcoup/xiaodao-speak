@@ -19,6 +19,7 @@ import {
   makeCustomPrompt,
   type CategoryKey,
   type Prompt,
+  type CustomPrompt,
 } from "@/lib/prompts";
 
 const RESEARCH_DURATIONS = [
@@ -65,17 +66,18 @@ function fmt(sec: number): string {
   return `${m}:${String(r).padStart(2, "0")}`;
 }
 
-// 个人词库只是一串词（不分领域），绘制时再包成 Prompt
+// 个人词库每个词带一个领域标签；具体领域时混入该领域的上传词
 function buildPool(
   cat: CategoryKey,
-  custom: string[],
+  custom: CustomPrompt[],
   includeExpressed: boolean,
   expressed: Set<string>,
 ): Prompt[] {
+  const customPrompts = custom.map((c) => makeCustomPrompt(c.term, c.category));
   let base: Prompt[];
-  if (cat === "all") base = [...promptsFor("all"), ...custom.map(makeCustomPrompt)];
-  else if (cat === "custom") base = custom.map(makeCustomPrompt);
-  else base = promptsFor(cat);
+  if (cat === "all") base = [...promptsFor("all"), ...customPrompts];
+  else if (cat === "custom") base = customPrompts;
+  else base = [...promptsFor(cat), ...customPrompts.filter((p) => p.category === cat)];
   return includeExpressed ? base : base.filter((p) => !expressed.has(p.id));
 }
 
@@ -83,7 +85,7 @@ export function PromptStage() {
   const [cat, setCat] = useState<CategoryKey>("all");
   const [prompt, setPrompt] = useState<Prompt | null>(null);
 
-  const [customTerms, setCustomTerms] = useState<string[]>([]);
+  const [customTerms, setCustomTerms] = useState<CustomPrompt[]>([]);
   const [expressed, setExpressed] = useState<Set<string>>(new Set());
   const [includeExpressed, setIncludeExpressed] = useState(false);
 
@@ -104,6 +106,7 @@ export function PromptStage() {
   // 批量导入弹层
   const [importOpen, setImportOpen] = useState(false);
   const [importText, setImportText] = useState("");
+  const [importCat, setImportCat] = useState<CategoryKey>("custom");
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -116,7 +119,10 @@ export function PromptStage() {
     () =>
       parsed.filter((t) => {
         const k = t.toLowerCase();
-        return customTerms.some((c) => c.toLowerCase() === k) || builtinTerms.has(k);
+        return (
+          customTerms.some((c) => c.term.toLowerCase() === k) ||
+          builtinTerms.has(k)
+        );
       }),
     [parsed, customTerms, builtinTerms],
   );
@@ -128,7 +134,7 @@ export function PromptStage() {
   // 载入本地存储：已表达 + 个人词库，并完成首抽（直接定格，无动画）
   useEffect(() => {
     let exp: Set<string> = new Set();
-    let cust: string[] = [];
+    let cust: CustomPrompt[] = [];
     try {
       const e = JSON.parse(localStorage.getItem(EXP_KEY) || "[]");
       if (Array.isArray(e)) exp = new Set(e as string[]);
@@ -136,12 +142,31 @@ export function PromptStage() {
     try {
       const c = JSON.parse(localStorage.getItem(CUSTOM_KEY) || "[]");
       if (Array.isArray(c)) {
+        const VALID: CategoryKey[] = [
+          "psychology",
+          "economy",
+          "science",
+          "philosophy",
+          "all",
+          "custom",
+        ];
         cust = c
-          .map((x: unknown) =>
-            typeof x === "string" ? x : ((x as { term?: string })?.term ?? ""),
-          )
-          .map((s: string) => s.trim())
-          .filter(Boolean);
+          .map((x: unknown): CustomPrompt | null => {
+            if (typeof x === "string") {
+              const t = x.trim();
+              return t ? { term: t, category: "custom" } : null;
+            }
+            if (x && typeof x === "object" && "term" in (x as object)) {
+              const o = x as { term?: string; category?: CategoryKey };
+              const t = (o.term ?? "").trim();
+              if (!t) return null;
+              const cat: CategoryKey =
+                o.category && VALID.includes(o.category) ? o.category : "custom";
+              return { term: t, category: cat };
+            }
+            return null;
+          })
+          .filter((v): v is CustomPrompt => v !== null);
       }
     } catch {}
     setExpressed(exp);
@@ -278,7 +303,10 @@ export function PromptStage() {
 
   function confirmImport() {
     if (importNew.length === 0) return;
-    const next = [...customTerms, ...importNew];
+    const next: CustomPrompt[] = [
+      ...customTerms,
+      ...importNew.map((t) => ({ term: t, category: importCat })),
+    ];
     setCustomTerms(next);
     setImportOpen(false);
     setImportText("");
@@ -682,6 +710,35 @@ export function PromptStage() {
               >
                 <span className="block h-5 w-5 text-center text-lg leading-5">×</span>
               </button>
+            </div>
+
+            {/* 这批命题归为哪个领域 */}
+            <div className="mt-4">
+              <div className="mb-1.5 text-xs font-semibold text-zinc-500 dark:text-zinc-400">
+                这批命题归为
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { key: "psychology", name: "心理学" },
+                  { key: "economy", name: "经济商业" },
+                  { key: "science", name: "科学科技" },
+                  { key: "philosophy", name: "思维哲学" },
+                  { key: "custom", name: "自命题" },
+                ].map((o) => (
+                  <button
+                    key={o.key}
+                    onClick={() => setImportCat(o.key as CategoryKey)}
+                    className={
+                      "rounded-full px-3 py-1 text-xs font-medium transition-colors " +
+                      (importCat === o.key
+                        ? "bg-accent text-accent-fg"
+                        : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800")
+                    }
+                  >
+                    {o.name}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <textarea

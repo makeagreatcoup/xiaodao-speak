@@ -139,7 +139,8 @@ export function categoryMeta(key: CategoryKey): Category {
 }
 
 // ===== 个人词库 =====
-// 个人词库「不分领域」，只是一串词，和内置 4 个领域混在同一个池里随机抽。
+// 个人词库的每个词可带一个领域标签（心理学 / 经济商业 / 科学科技 / 思维哲学 / 自命题），
+// 导入时指定；抽「随机全场」会混进所有上传词，抽具体领域只会混入该领域的上传词。
 // id 由词本身推导，保证跨会话去重稳定。
 const CUSTOM_PREFIX = "custom::";
 
@@ -147,8 +148,16 @@ export function customPromptId(term: string): string {
   return CUSTOM_PREFIX + term.trim();
 }
 
-export function makeCustomPrompt(term: string): Prompt {
-  return { id: customPromptId(term), term: term.trim(), category: "custom" };
+export interface CustomPrompt {
+  term: string;
+  category: CategoryKey;
+}
+
+export function makeCustomPrompt(
+  term: string,
+  category: CategoryKey = "custom",
+): Prompt {
+  return { id: customPromptId(term), term: term.trim(), category };
 }
 
 /**
