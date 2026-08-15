@@ -427,17 +427,6 @@ export function PromptStage() {
   const researchShown = phase === "research" ? left : researchDuration;
   const speakShown = phase === "speak" ? left : speakDuration;
 
-  const hint =
-    phase === "research"
-      ? "打开浏览器，查它的来历、案例和反面观点"
-      : phase === "ready"
-        ? "查得差不多了？合上屏幕，用 1 分钟讲清楚"
-        : phase === "speak"
-          ? "别看屏幕，开口就讲，卡壳也别停"
-          : phase === "done"
-            ? "这段讲得顺不顺都算数，已记成「已表达」"
-            : "小导随机抽一个词，先查资料，再开讲";
-
   // 抽题范围标签（cat 可能是内置 key / all / mine / cat:名称）
   const catLabel = (c: string): string =>
     c === "all"
@@ -448,13 +437,16 @@ export function PromptStage() {
           ? c.slice(4)
           : categoryMeta(c).name;
 
-  // 轮盘下方小字：滚动中清空，词语定格后才显示类型
+  // 轮盘下方小字：滚动中保留抽题范围、本词类别留空，定格后填值
+  const wordCat = prompt ? categoryMeta(prompt.category).name : "";
   const typeCaption = spinning
-    ? ""
+    ? cat === "all" || cat === "mine" || cat.startsWith("cat:")
+      ? `抽题范围 · ${catLabel(cat)}　｜　本词类别 ·`
+      : `类别 ·`
     : prompt
       ? cat === "all" || cat === "mine" || cat.startsWith("cat:")
-        ? `抽题范围 · ${catLabel(cat)}　｜　本词类别 · ${categoryMeta(prompt.category).name}`
-        : `类别 · ${categoryMeta(prompt.category).name}`
+        ? `抽题范围 · ${catLabel(cat)}　｜　本词类别 · ${wordCat}`
+        : `类别 · ${wordCat}`
       : `抽题范围 · ${catLabel(cat)}`;
 
   return (
@@ -564,15 +556,12 @@ export function PromptStage() {
             )}
           </div>
 
-          {/* 类型说明小字：滚动中清空，词语定格后才显示 */}
+          {/* 类型说明小字：滚动中保留抽题范围、本词类别留空，定格后填值 */}
           {typeCaption && (
             <p className="mt-3 text-xs tracking-wide text-zinc-400 dark:text-zinc-500">
               {typeCaption}
             </p>
           )}
-
-          {/* 极简阶段提示 */}
-          <p className="mt-1 text-sm text-zinc-400 dark:text-zinc-500">{hint}</p>
         </div>
       </div>
 
