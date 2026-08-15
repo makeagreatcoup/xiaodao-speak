@@ -438,16 +438,19 @@ export function PromptStage() {
           : categoryMeta(c).name;
 
   // 轮盘下方小字：滚动中保留抽题范围、本词类别留空，定格后填值
+  // 拆成「前缀 + 值」两段，值放进预留宽度的 span，使整行居中且值出现时不横移
   const wordCat = prompt ? categoryMeta(prompt.category).name : "";
-  const typeCaption = spinning
-    ? cat === "all" || cat === "mine" || cat.startsWith("cat:")
+  const isRangeCat = cat === "all" || cat === "mine" || cat.startsWith("cat:");
+  let capPrefix = "";
+  let capValue = "";
+  if (spinning || prompt) {
+    capPrefix = isRangeCat
       ? `抽题范围 · ${catLabel(cat)}　｜　本词类别 ·`
-      : `类别 ·`
-    : prompt
-      ? cat === "all" || cat === "mine" || cat.startsWith("cat:")
-        ? `抽题范围 · ${catLabel(cat)}　｜　本词类别 · ${wordCat}`
-        : `类别 · ${wordCat}`
-      : `抽题范围 · ${catLabel(cat)}`;
+      : `类别 ·`;
+    capValue = spinning ? "" : wordCat;
+  } else {
+    capPrefix = `抽题范围 · ${catLabel(cat)}`;
+  }
 
   return (
     <section
@@ -556,12 +559,13 @@ export function PromptStage() {
             )}
           </div>
 
-          {/* 类型说明小字：左对齐固定，滚动中保留抽题范围、本词类别留空，定格后填值（不重新居中、不横移） */}
-          {typeCaption && (
-            <p className="mt-3 text-left text-xs tracking-wide text-zinc-400 dark:text-zinc-500">
-              {typeCaption}
-            </p>
-          )}
+          {/* 类型说明小字：居中且固定——值放进预留宽度的 span，滚动→定格时本词类别值出现也不横移 */}
+          <p className="mt-3 text-center text-xs tracking-wide text-zinc-400 dark:text-zinc-500">
+            {capPrefix}
+            {(spinning || prompt) && (
+              <span className="inline-block min-w-[4em] text-left">{capValue}</span>
+            )}
+          </p>
         </div>
       </div>
 
