@@ -134,7 +134,7 @@ export function PromptStage() {
   const [importOpen, setImportOpen] = useState(false);
   const [importText, setImportText] = useState("");
   const [importCat, setImportCat] = useState<string>("自命题");
-  // 导入时可归到的内置领域（从 categories 派生，含新增的 11 个主题）
+  // 导入时可归到的内置领域（从 categories 派生，含保留的深奥主题）
   const IMPORT_BUILTINS = useMemo(
     () =>
       categories

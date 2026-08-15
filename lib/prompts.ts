@@ -18,7 +18,7 @@ export interface Category {
   blurb: string;
 }
 
-// 从「交谈话题」提取的 250 条默认话题（11 个主题），见 lib/seed-topics.ts
+// 从「交谈话题」提取、经筛选保留的 75 条默认话题（3 个深奥主题），见 lib/seed-topics.ts
 import { seedTopics } from "./seed-topics";
 
 // 展示用分类（不含 custom，custom 由本地存储动态驱动）
@@ -48,60 +48,12 @@ export const categories: Category[] = [
     blurb: "没有标准答案的词，最适合练「把道理讲圆」的本事。",
   },
 
-  // ===== 从「交谈话题」提取的 11 个主题 =====
-  {
-    key: "general",
-    name: "日常",
-    tag: "张口就来",
-    blurb: "柴米油盐、通勤旧物，越普通越能讲出不一样的味道。",
-  },
+  // ===== 从「交谈话题」提取、经筛选保留的 3 个深奥 / 非日常主题 =====
   {
     key: "deep-research",
     name: "深度研究",
     tag: "挖深一点",
-    blurb: "先把资料查透，再开口做一场有东西的演讲。",
-  },
-  {
-    key: "personal-finance",
-    name: "个人理财",
-    tag: "钱袋子",
-    blurb: "复利、通胀、资产配置，把理财概念讲成听得懂的大白话。",
-  },
-  {
-    key: "entrepreneurship",
-    name: "创业",
-    tag: "下场干",
-    blurb: "从 0 到 1 的那些词，讲给想自己干的人听。",
-  },
-  {
-    key: "startups",
-    name: "初创",
-    tag: "早期打法",
-    blurb: "融资、增长、转型，初创公司天天在用的概念。",
-  },
-  {
-    key: "tech-ai",
-    name: "科技 · AI",
-    tag: "前沿硬货",
-    blurb: "AI、区块链、深度学习，挑一个半懂不懂的查明白再讲。",
-  },
-  {
-    key: "fitness",
-    name: "健身",
-    tag: "练起来",
-    blurb: "力训、有氧、恢复，把健身黑话翻译成人话。",
-  },
-  {
-    key: "nutrition",
-    name: "营养",
-    tag: "吃明白",
-    blurb: "宏量营养素、代谢、饮食法，别被营销带偏。",
-  },
-  {
-    key: "productivity",
-    name: "生产力",
-    tag: "更高效",
-    blurb: "时间块、心流、深度工作，把效率工具讲出道理。",
+    blurb: "认知偏误、社会心理，先把资料查透，再开口做一场有东西的演讲。",
   },
   {
     key: "history",
@@ -120,7 +72,7 @@ export const categories: Category[] = [
     key: "all",
     name: "随机全场",
     tag: "全池混抽",
-    blurb: "十五块场子混在一起，抽到谁算谁，主打一个大量随机。",
+    blurb: "几块场子混在一起，抽到谁算谁，主打一个大量随机。",
   },
 ];
 
@@ -193,7 +145,7 @@ export const prompts: Prompt[] = [
   { id: "phi-14", term: "自由意志", category: "philosophy", note: "你真能选吗；开讲讲责任和选择到底归不归你。" },
   { id: "phi-15", term: "中庸", category: "philosophy", note: "不偏不倚；开讲讲它不是和稀泥，是分寸感。" },
 
-  // ===== 从「交谈话题」提取的 250 条默认话题 =====
+  // ===== 从「交谈话题」提取、经筛选保留的 75 条深奥话题 =====
   ...seedTopics,
 ];
 
