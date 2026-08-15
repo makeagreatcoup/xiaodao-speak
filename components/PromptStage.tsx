@@ -504,16 +504,30 @@ export function PromptStage() {
       id="stage"
       className="relative mx-auto flex min-h-screen max-w-2xl flex-col items-center justify-center px-4 py-6 sm:px-6"
     >
-      {/* 设置入口：原「上传」按钮改为「设置」，打开设置面板 */}
-      <button
-        onClick={() => setSettingsOpen(true)}
-        aria-label="设置"
-        title="设置"
-        className="fixed right-4 top-4 z-40 inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white/80 px-3 py-2 text-sm font-medium text-zinc-600 shadow-sm backdrop-blur transition-colors hover:text-accent dark:border-zinc-800 dark:bg-zinc-900/80 dark:text-zinc-300"
-      >
-        <GearIcon className="h-4 w-4" />
-        设置
-      </button>
+      {/* 右上角：常驻「已表达 N」入口 + 设置入口 */}
+      <div className="fixed right-4 top-4 z-40 flex items-center gap-2">
+        <button
+          onClick={() => {
+            setSettingsTab("expressed");
+            setSettingsOpen(true);
+          }}
+          aria-label="已表达"
+          title="查看已表达"
+          className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white/80 px-3 py-2 text-sm font-medium text-zinc-600 shadow-sm backdrop-blur transition-colors hover:text-accent dark:border-zinc-800 dark:bg-zinc-900/80 dark:text-zinc-300"
+        >
+          <CheckIcon className="h-4 w-4" />
+          已表达 {expressed.size}
+        </button>
+        <button
+          onClick={() => setSettingsOpen(true)}
+          aria-label="设置"
+          title="设置"
+          className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white/80 px-3 py-2 text-sm font-medium text-zinc-600 shadow-sm backdrop-blur transition-colors hover:text-accent dark:border-zinc-800 dark:bg-zinc-900/80 dark:text-zinc-300"
+        >
+          <GearIcon className="h-4 w-4" />
+          设置
+        </button>
+      </div>
 
       {/* 头部：站点名 + 一句话说明 */}
       <header className="mb-4 text-center">
@@ -783,10 +797,16 @@ export function PromptStage() {
         )}
 
         {phase === "done" && (
-          <div className="inline-flex items-center gap-2 rounded-full bg-emerald-500/10 px-5 py-3 text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+          <button
+            onClick={() => {
+              setSettingsTab("expressed");
+              setSettingsOpen(true);
+            }}
+            className="inline-flex items-center gap-2 rounded-full bg-emerald-500/10 px-5 py-3 text-sm font-semibold text-emerald-600 transition-colors hover:bg-emerald-500/20 dark:text-emerald-400"
+          >
             <CheckIcon className="h-4 w-4" />
-            已记为「已表达」，点「抽命题」开始下一个
-          </div>
+            已记为「已表达」：{prompt?.term}（累计 {expressed.size} 条 · 点此查看）
+          </button>
         )}
 
         {(phase === "research" || phase === "ready" || phase === "speak") && (
