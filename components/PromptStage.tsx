@@ -14,6 +14,7 @@ import {
 import {
   prompts,
   promptsFor,
+  categories,
   parseWordList,
   makeCustomPrompt,
   type CategoryKey,
@@ -467,6 +468,56 @@ export function PromptStage() {
         <UploadIcon className="h-4 w-4" />
       </button>
 
+      {/* 头部：站点名 + 一句话说明（参考 unprompted.cool 的 header） */}
+      <header className="mb-5 text-center">
+        <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+          小导片场
+          <span className="ml-2 align-middle text-sm font-semibold text-accent">
+            先查后讲
+          </span>
+        </h1>
+        <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+          抽个词，先查资料，再开口讲 · 练即席表达
+        </p>
+      </header>
+
+      {/* 命题分类：随机全场 + 内置 4 领域 + 我的命题（对应参考站的 General 分类选择） */}
+      <div className="mb-6 flex flex-wrap justify-center gap-2">
+        {categories.map((c) => {
+          const active = c.key === cat;
+          const isAll = c.key === "all";
+          return (
+            <button
+              key={c.key}
+              onClick={() => switchCat(c.key)}
+              className={
+                "rounded-full px-4 py-1.5 text-sm font-medium transition-colors " +
+                (active
+                  ? "bg-accent text-accent-fg"
+                  : isAll
+                    ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900"
+                    : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800")
+              }
+            >
+              {c.name}
+            </button>
+          );
+        })}
+        {customTerms.length > 0 && (
+          <button
+            onClick={() => switchCat("custom")}
+            className={
+              "rounded-full px-4 py-1.5 text-sm font-medium transition-colors " +
+              (cat === "custom"
+                ? "bg-accent text-accent-fg"
+                : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800")
+            }
+          >
+            我的命题 {customTerms.length}
+          </button>
+        )}
+      </div>
+
       {/* 命题卡：大词 + 轮盘，整屏居中核心 */}
       <div className="relative w-full">
         <div
@@ -503,6 +554,44 @@ export function PromptStage() {
 
           {/* 极简阶段提示：随阶段变化的一行小字，告诉观众现在在干嘛 */}
           <p className="mt-3 text-sm text-zinc-400 dark:text-zinc-500">{hint}</p>
+        </div>
+      </div>
+
+      {/* 时间设置：查资料 / 开讲时长（对应参考站 Start 1 min timer 的参数化） */}
+      <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-3">
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-zinc-400">查资料</span>
+          {RESEARCH_DURATIONS.map((d) => (
+            <button
+              key={d.value}
+              onClick={() => changeResearch(d.value)}
+              className={
+                "rounded-full px-3 py-1.5 text-xs font-medium transition-colors " +
+                (d.value === researchDuration
+                  ? "bg-accent/10 text-accent"
+                  : "text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900")
+              }
+            >
+              {d.label}
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-zinc-400">开讲</span>
+          {SPEAK_DURATIONS.map((d) => (
+            <button
+              key={d.value}
+              onClick={() => changeSpeak(d.value)}
+              className={
+                "rounded-full px-3 py-1.5 text-xs font-medium transition-colors " +
+                (d.value === speakDuration
+                  ? "bg-accent/10 text-accent"
+                  : "text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900")
+              }
+            >
+              {d.label}
+            </button>
+          ))}
         </div>
       </div>
 
