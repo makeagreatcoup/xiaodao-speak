@@ -10,6 +10,8 @@ import {
   PlusIcon,
   CheckIcon,
   UploadIcon,
+  GearIcon,
+  ChevronDownIcon,
 } from "@radix-ui/react-icons";
 import {
   prompts,
@@ -122,17 +124,24 @@ export function PromptStage() {
   // 抽中的词暂存：滚动期间不写入 prompt，定格结束才显示，避免类别小字提前出现
   const chosenRef = useRef<Prompt | null>(null);
 
+  // 设置面板（由右上角「设置」按钮打开）
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsTab, setSettingsTab] = useState<"bank" | "expressed" | "import">("bank");
+  const [bankSearch, setBankSearch] = useState("");
+  const [bankExpanded, setBankExpanded] = useState<Set<string>>(new Set());
+
   // 批量导入弹层
   const [importOpen, setImportOpen] = useState(false);
   const [importText, setImportText] = useState("");
   const [importCat, setImportCat] = useState<string>("自命题");
-  // 导入时可归到的内置领域（其余为自定义命名）
-  const IMPORT_BUILTINS = [
-    { key: "psychology", name: "心理学" },
-    { key: "economy", name: "经济商业" },
-    { key: "science", name: "科学科技" },
-    { key: "philosophy", name: "思维哲学" },
-  ];
+  // 导入时可归到的内置领域（从 categories 派生，含新增的 11 个主题）
+  const IMPORT_BUILTINS = useMemo(
+    () =>
+      categories
+        .filter((c) => c.key !== "all")
+        .map((c) => ({ key: c.key, name: c.name })),
+    [],
+  );
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -164,6 +173,13 @@ export function PromptStage() {
       ),
     [customTerms],
   );
+
+  // 设置面板用：个人命题 Prompt 列表 + 全量（种子 + 个人）用于「已表达」查询
+  const customPrompts = useMemo(
+    () => customTerms.map((c) => makeCustomPrompt(c.term, c.category)),
+    [customTerms],
+  );
+  const allPrompts = useMemo(() => [...prompts, ...customPrompts], [customPrompts]);
 
   // 载入本地存储：已表达 + 个人词库，并完成首抽（直接定格，无动画）
   useEffect(() => {
@@ -457,14 +473,15 @@ export function PromptStage() {
       id="stage"
       className="relative mx-auto flex min-h-screen max-w-2xl flex-col items-center justify-center px-4 py-6 sm:px-6"
     >
-      {/* 导入词库：极简图标入口，不写说明、不占主视觉 */}
+      {/* 设置入口：原「上传」按钮改为「设置」，打开设置面板 */}
       <button
-        onClick={() => setImportOpen(true)}
-        aria-label="导入词库"
-        title="导入词库"
-        className="fixed right-4 top-4 z-40 inline-flex h-10 w-10 items-center justify-center rounded-full border border-zinc-200 bg-white/80 text-zinc-500 backdrop-blur transition-colors hover:text-accent dark:border-zinc-800 dark:bg-zinc-900/80 dark:text-zinc-400"
+        onClick={() => setSettingsOpen(true)}
+        aria-label="设置"
+        title="设置"
+        className="fixed right-4 top-4 z-40 inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white/80 px-3 py-2 text-sm font-medium text-zinc-600 shadow-sm backdrop-blur transition-colors hover:text-accent dark:border-zinc-800 dark:bg-zinc-900/80 dark:text-zinc-300"
       >
-        <UploadIcon className="h-4 w-4" />
+        <GearIcon className="h-4 w-4" />
+        设置
       </button>
 
       {/* 头部：站点名 + 一句话说明 */}
@@ -754,6 +771,221 @@ export function PromptStage() {
           </button>
         )}
       </div>
+
+      {/* 设置面板：话题库（按主题浏览）/ 已表达 / 导入 */}
+      {settingsOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setSettingsOpen(false)}
+            aria-hidden
+          />
+          <div className="relative flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-xl dark:border-zinc-800 dark:bg-zinc-900">
+            {/* 头部 + 标签切换 */}
+            <div className="flex items-center justify-between border-b border-zinc-200 px-5 py-3 dark:border-zinc-800">
+              <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">设置</h3>
+              <button
+                onClick={() => setSettingsOpen(false)}
+                className="rounded-full p-1 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800"
+                aria-label="关闭"
+              >
+                <span className="block h-5 w-5 text-center text-lg leading-5">×</span>
+              </button>
+            </div>
+            <div className="flex gap-1 border-b border-zinc-200 px-3 dark:border-zinc-800">
+              {([
+                { k: "bank", label: "话题库" },
+                { k: "expressed", label: "已表达" },
+                { k: "import", label: "导入" },
+              ] as const).map((t) => (
+                <button
+                  key={t.k}
+                  onClick={() => setSettingsTab(t.k)}
+                  className={
+                    "relative px-3 py-2.5 text-sm font-medium transition-colors " +
+                    (settingsTab === t.k
+                      ? "text-accent"
+                      : "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200")
+                  }
+                >
+                  {t.label}
+                  {settingsTab === t.k && (
+                    <span className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-accent" />
+                  )}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-5">
+              {/* ===== 话题库：按主题浏览全部话题 ===== */}
+              {settingsTab === "bank" && (
+                <div>
+                  <div className="relative mb-4">
+                    <MagnifyingGlassIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+                    <input
+                      value={bankSearch}
+                      onChange={(e) => setBankSearch(e.target.value)}
+                      placeholder="搜索话题…"
+                      className="w-full rounded-full border border-zinc-300 bg-white py-2 pl-9 pr-3 text-sm text-zinc-800 outline-none transition-colors focus:border-accent dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+                    />
+                  </div>
+                  {(() => {
+                    const q = bankSearch.trim().toLowerCase();
+                    const allCats = categories.filter((c) => c.key !== "all");
+                    // 搜索态：跨主题平铺命中项
+                    if (q) {
+                      const hits = allPrompts.filter((p) =>
+                        p.term.toLowerCase().includes(q),
+                      );
+                      return (
+                        <div className="space-y-1.5">
+                          {hits.length === 0 && (
+                            <p className="py-6 text-center text-sm text-zinc-400">
+                              没有匹配「{bankSearch}」的话题。
+                            </p>
+                          )}
+                          {hits.map((p) => (
+                            <div
+                              key={p.id}
+                              className="flex items-center justify-between gap-3 rounded-lg bg-zinc-50 px-3 py-2 dark:bg-zinc-800/60"
+                            >
+                              <span className="text-sm text-zinc-800 dark:text-zinc-100">
+                                {p.term}
+                              </span>
+                              <span className="shrink-0 rounded-full bg-accent/10 px-2 py-0.5 text-xs text-accent">
+                                {categoryMeta(p.category).name}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    }
+                    // 非搜索态：按主题折叠展示
+                    const sections = [
+                      ...allCats.map((c) => ({
+                        key: c.key,
+                        name: c.name,
+                        items: promptsFor(c.key),
+                      })),
+                      { key: "mine", name: "我的命题", items: customPrompts },
+                    ];
+                    return (
+                      <div className="space-y-2">
+                        {sections.map((s) => {
+                          const open = bankExpanded.has(s.key);
+                          return (
+                            <div
+                              key={s.key}
+                              className="overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-800"
+                            >
+                              <button
+                                onClick={() =>
+                                  setBankExpanded((prev) => {
+                                    const n = new Set(prev);
+                                    if (n.has(s.key)) n.delete(s.key);
+                                    else n.add(s.key);
+                                    return n;
+                                  })
+                                }
+                                className="flex w-full items-center justify-between gap-2 bg-zinc-50 px-3 py-2.5 text-left transition-colors hover:bg-zinc-100 dark:bg-zinc-800/60 dark:hover:bg-zinc-800"
+                              >
+                                <span className="text-sm font-semibold text-zinc-800 dark:text-zinc-100">
+                                  {s.name}
+                                  <span className="ml-2 text-xs font-normal text-zinc-400">
+                                    {s.items.length}
+                                  </span>
+                                </span>
+                                <ChevronDownIcon
+                                  className={
+                                    "h-4 w-4 shrink-0 text-zinc-400 transition-transform " +
+                                    (open ? "rotate-180" : "")
+                                  }
+                                />
+                              </button>
+                              {open && (
+                                <div className="flex flex-wrap gap-1.5 p-3">
+                                  {s.items.length === 0 ? (
+                                    <span className="text-xs text-zinc-400">还没有话题</span>
+                                  ) : (
+                                    s.items.map((p) => (
+                                      <span
+                                        key={p.id}
+                                        className="rounded-full bg-zinc-100 px-2.5 py-1 text-xs text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+                                      >
+                                        {p.term}
+                                      </span>
+                                    ))
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+
+              {/* ===== 已表达：查看标记过的内容 ===== */}
+              {settingsTab === "expressed" && (
+                <div>
+                  {expressed.size === 0 ? (
+                    <p className="py-10 text-center text-sm text-zinc-400">
+                      还没有标记过「已表达」的内容。抽到一个词、讲完点「标记已表达，换下一个」就会出现在这里。
+                    </p>
+                  ) : (
+                    <div className="space-y-1.5">
+                      <p className="mb-2 text-xs text-zinc-400">
+                        共 {expressed.size} 条已表达
+                      </p>
+                      {allPrompts
+                        .filter((p) => expressed.has(p.id))
+                        .map((p) => (
+                          <div
+                            key={p.id}
+                            className="flex items-center justify-between gap-3 rounded-lg bg-zinc-50 px-3 py-2 dark:bg-zinc-800/60"
+                          >
+                            <span className="text-sm text-zinc-800 dark:text-zinc-100">
+                              {p.term}
+                            </span>
+                            <span className="shrink-0 rounded-full bg-accent/10 px-2 py-0.5 text-xs text-accent">
+                              {categoryMeta(p.category).name}
+                            </span>
+                          </div>
+                        ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ===== 导入：入口打开原有导入弹层 ===== */}
+              {settingsTab === "import" && (
+                <div className="text-center">
+                  <p className="mb-4 text-sm text-zinc-500 dark:text-zinc-400">
+                    批量粘贴或上传 .txt / .csv，按领域归类到话题库；也可以一行一个词直接加。
+                  </p>
+                  <button
+                    onClick={() => {
+                      setSettingsOpen(false);
+                      setImportOpen(true);
+                    }}
+                    className="inline-flex items-center gap-1.5 rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-accent-fg transition-transform hover:-translate-y-px active:translate-y-0"
+                  >
+                    <PlusIcon className="h-4 w-4" />
+                    打开导入窗口
+                  </button>
+                  {customTerms.length > 0 && (
+                    <p className="mt-3 text-xs text-zinc-400">
+                      当前个人命题 {customTerms.length} 个
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 批量导入弹层 */}
       {importOpen && (
