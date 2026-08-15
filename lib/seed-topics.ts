@@ -1,12 +1,11 @@
 // 种子话题库：按「真实学科」组织的概念集，主题=学科，话题=该学科里真实存在的概念。
 //
 // 设计原则（回应上一版「自己编主题 + 随意配对」的问题）：
-//  · 主题本身就是标准学科（哲学 / 心理学 / 经济学 / 社会学 / 科学 / 历史学 / 逻辑与数学 / 语言学），
+//  · 主题本身就是标准学科（哲学 / 心理学 / 经济学 / 社会学 / 科学 / 逻辑与数学），
 //    不是临时拼出来的分类；
 //  · 每个话题都是该学科里真实、可查证的概念（教材 / 文献里实际存在的词），不是编造的词组；
 //  · 心理学取自 Buster Benson《Cognitive Bias Cheat Sheet》认知偏误体系；
-//    其余学科取自各学科标准概念表（哲学概念、经济学名词、社会学理论、科学核心概念、
-//    历史重大事件与时期、逻辑与数学悖论、语言学核心议题）。
+//    其余学科取自各学科标准概念表（哲学概念、经济学名词、社会学理论、科学核心概念、逻辑与数学悖论）。
 // 每条取概念名作为 term，category 用学科英文 id，与 lib/prompts.ts 的 categories 对应。
 // 仅作静态种子数据，运行时可通过「设置 → 导入」追加个人词库。
 import type { Prompt } from "./prompts";
@@ -182,38 +181,6 @@ export const seedTopics: Prompt[] = [
   { id: "seed::science::31", term: "光合作用", category: "science" },
   { id: "seed::science::32", term: "噬菌体", category: "science" },
 
-  // ===== 历史学 history：重大事件、时期与转折点 =====
-  { id: "seed::history::1", term: "工业革命", category: "history" },
-  { id: "seed::history::2", term: "法国大革命", category: "history" },
-  { id: "seed::history::3", term: "文艺复兴", category: "history" },
-  { id: "seed::history::4", term: "启蒙运动", category: "history" },
-  { id: "seed::history::5", term: "冷战", category: "history" },
-  { id: "seed::history::6", term: "第一次世界大战", category: "history" },
-  { id: "seed::history::7", term: "第二次世界大战", category: "history" },
-  { id: "seed::history::8", term: "罗马帝国", category: "history" },
-  { id: "seed::history::9", term: "丝绸之路", category: "history" },
-  { id: "seed::history::10", term: "大航海时代", category: "history" },
-  { id: "seed::history::11", term: "明治维新", category: "history" },
-  { id: "seed::history::12", term: "五四运动", category: "history" },
-  { id: "seed::history::13", term: "美国独立战争", category: "history" },
-  { id: "seed::history::14", term: "三十年战争", category: "history" },
-  { id: "seed::history::15", term: "黑死病", category: "history" },
-  { id: "seed::history::16", term: "印刷术革命", category: "history" },
-  { id: "seed::history::17", term: "跨大西洋奴隶贸易", category: "history" },
-  { id: "seed::history::18", term: "拿破仑战争", category: "history" },
-  { id: "seed::history::19", term: "宗教改革", category: "history" },
-  { id: "seed::history::20", term: "郑和下西洋", category: "history" },
-  { id: "seed::history::21", term: "鸦片战争", category: "history" },
-  { id: "seed::history::22", term: "十月革命", category: "history" },
-  { id: "seed::history::23", term: "雅典民主", category: "history" },
-  { id: "seed::history::24", term: "十字军东征", category: "history" },
-  { id: "seed::history::25", term: "蒙古西征", category: "history" },
-  { id: "seed::history::26", term: "美国内战", category: "history" },
-  { id: "seed::history::27", term: "布匿战争", category: "history" },
-  { id: "seed::history::28", term: "百年战争", category: "history" },
-  { id: "seed::history::29", term: "太平天国运动", category: "history" },
-  { id: "seed::history::30", term: "光荣革命", category: "history" },
-
   // ===== 逻辑与数学 logic-math：悖论、定理与思维工具 =====
   { id: "seed::logic-math::1", term: "芝诺悖论", category: "logic-math" },
   { id: "seed::logic-math::2", term: "说谎者悖论", category: "logic-math" },
@@ -246,35 +213,4 @@ export const seedTopics: Prompt[] = [
   { id: "seed::logic-math::29", term: "皮亚诺公理", category: "logic-math" },
   { id: "seed::logic-math::30", term: "康托尔定理", category: "logic-math" },
 
-  // ===== 语言学 linguistics：语言结构与习得的核心议题 =====
-  { id: "seed::linguistics::1", term: "萨丕尔-沃尔夫假说", category: "linguistics" },
-  { id: "seed::linguistics::2", term: "生成语法", category: "linguistics" },
-  { id: "seed::linguistics::3", term: "普遍语法", category: "linguistics" },
-  { id: "seed::linguistics::4", term: "音位", category: "linguistics" },
-  { id: "seed::linguistics::5", term: "形态学", category: "linguistics" },
-  { id: "seed::linguistics::6", term: "语义场", category: "linguistics" },
-  { id: "seed::linguistics::7", term: "语用学", category: "linguistics" },
-  { id: "seed::linguistics::8", term: "言语行为理论", category: "linguistics" },
-  { id: "seed::linguistics::9", term: "合作原则", category: "linguistics" },
-  { id: "seed::linguistics::10", term: "会话含义", category: "linguistics" },
-  { id: "seed::linguistics::11", term: "语言相对论", category: "linguistics" },
-  { id: "seed::linguistics::12", term: "克里奥尔语", category: "linguistics" },
-  { id: "seed::linguistics::13", term: "皮钦语", category: "linguistics" },
-  { id: "seed::linguistics::14", term: "元音大推移", category: "linguistics" },
-  { id: "seed::linguistics::15", term: "格林定律", category: "linguistics" },
-  { id: "seed::linguistics::16", term: "屈折语", category: "linguistics" },
-  { id: "seed::linguistics::17", term: "孤立语", category: "linguistics" },
-  { id: "seed::linguistics::18", term: "黏着语", category: "linguistics" },
-  { id: "seed::linguistics::19", term: "语言习得机制", category: "linguistics" },
-  { id: "seed::linguistics::20", term: "临界期假说", category: "linguistics" },
-  { id: "seed::linguistics::21", term: "方言连续体", category: "linguistics" },
-  { id: "seed::linguistics::22", term: "社会语言学", category: "linguistics" },
-  { id: "seed::linguistics::23", term: "失语症", category: "linguistics" },
-  { id: "seed::linguistics::24", term: "语言演化", category: "linguistics" },
-  { id: "seed::linguistics::25", term: "借词", category: "linguistics" },
-  { id: "seed::linguistics::26", term: "声调语言", category: "linguistics" },
-  { id: "seed::linguistics::27", term: "乔姆斯基层级", category: "linguistics" },
-  { id: "seed::linguistics::28", term: "语码转换", category: "linguistics" },
-  { id: "seed::linguistics::29", term: "言语社区", category: "linguistics" },
-  { id: "seed::linguistics::30", term: "手势语", category: "linguistics" },
 ];

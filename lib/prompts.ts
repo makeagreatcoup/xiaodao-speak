@@ -24,7 +24,7 @@ import { seedTopics } from "./seed-topics";
 // 展示用分类（不含 custom，custom 由本地存储动态驱动）
 // 全部是标准学科，话题均取自各学科真实概念表：
 //  · 心理学 —— Buster Benson《Cognitive Bias Cheat Sheet》认知偏误体系
-//  · 哲学 / 经济学 / 社会学 / 科学 / 历史学 / 逻辑与数学 / 语言学 —— 各学科标准概念与议题
+//  · 哲学 / 经济学 / 社会学 / 科学 / 逻辑与数学 —— 各学科标准概念与议题
 export const categories: Category[] = [
   {
     key: "philosophy",
@@ -57,29 +57,17 @@ export const categories: Category[] = [
     blurb: "熵、量子纠缠、自然选择——挑一个你半懂不懂的，查明白再开口。",
   },
   {
-    key: "history",
-    name: "历史学",
-    tag: "读懂过去",
-    blurb: "工业革命、文艺复兴、冷战——把一个时代的前因后果讲给人听。",
-  },
-  {
     key: "logic-math",
     name: "逻辑与数学",
     tag: "思维体操",
     blurb: "芝诺悖论、哥德尔不完备、蒙提霍尔——在严密与反直觉之间练脑子。",
-  },
-  {
-    key: "linguistics",
-    name: "语言学",
-    tag: "语言密码",
-    blurb: "萨丕尔-沃尔夫、生成语法、声调语言——揭开人类最神奇的工具。",
   },
 
   {
     key: "all",
     name: "随机全场",
     tag: "全池混抽",
-    blurb: "八块场子混在一起，抽到谁算谁，主打一个大量随机。",
+    blurb: "六块场子混在一起，抽到谁算谁，主打一个大量随机。",
   },
 ];
 
