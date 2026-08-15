@@ -57,8 +57,8 @@ body {
   letter-spacing: -0.01em;
   line-height: 1.12;
   color: var(--color-accent);
-  /* 锁定：从中性色平滑过渡到主题红 + 轻微辉光，不做缩放 / 回弹 */
-  animation: lockIn 0.5s ease both;
+  /* 锁定：中性色 → 主题红 + 辉光，轻微过冲回弹并放大强调 */
+  animation: lockIn 0.6s cubic-bezier(0.34, 1.4, 0.5, 1) both;
 }
 @keyframes lockIn {
   0% {
@@ -66,10 +66,13 @@ body {
     text-shadow: 0 0 0 rgba(255, 75, 51, 0);
     transform: scale(1);
   }
+  60% {
+    transform: scale(1.1);
+  }
   100% {
     color: var(--color-accent);
-    text-shadow: 0 0 22px rgba(255, 75, 51, 0.45);
-    transform: scale(1.04);
+    text-shadow: 0 0 24px rgba(255, 75, 51, 0.5);
+    transform: scale(1.08);
   }
 }
 .dark .reel-row {
@@ -84,10 +87,13 @@ body {
     text-shadow: 0 0 0 rgba(255, 75, 51, 0);
     transform: scale(1);
   }
+  60% {
+    transform: scale(1.1);
+  }
   100% {
     color: var(--color-accent);
-    text-shadow: 0 0 26px rgba(255, 75, 51, 0.6);
-    transform: scale(1.04);
+    text-shadow: 0 0 28px rgba(255, 75, 51, 0.65);
+    transform: scale(1.08);
   }
 }
 .reel-word--empty {
