@@ -1,6 +1,6 @@
-// 种子话题库：从「交谈话题」(Conversation Starter) 提取、并经筛选保留的「深奥 / 非日常」主题（75 条 / 3 主题）。
-// 保留标准：普通人日常接触不到、偏新鲜深奥的话题（如认知偏误、历史转折、文学经典）。
-// 已剔除：日常 / 个人理财 / 创业 / 初创 / 科技·AI / 健身 / 营养 / 生产力 等日常自我提升类主题。
+// 种子话题库：从「交谈话题」(Conversation Starter) 提取、并经筛选保留的「深奥 / 非日常」主题（47 条 / 2 主题）。
+// 保留标准：普通人日常接触不到、偏新鲜深奥的话题（如认知偏误、文学经典）。
+// 已剔除：日常 / 个人理财 / 创业 / 初创 / 科技·AI / 健身 / 营养 / 生产力 / 历史 等日常或偏常识类主题。
 // 每条取中文（zh 为空时回退英文），category 用主题英文 id，与 lib/prompts.ts 的 categories 对应。
 // 仅作静态种子数据，运行时可通过「设置 → 导入」追加个人词库。
 import type { Prompt } from "./prompts";
@@ -31,34 +31,6 @@ export const seedTopics: Prompt[] = [
   { id: "seed::deep-research::23", term: "林迪效应", category: "deep-research" },
   { id: "seed::deep-research::24", term: "选择悖论", category: "deep-research" },
   { id: "seed::deep-research::25", term: "基本归因谬误", category: "deep-research" },
-  { id: "seed::history::1", term: "柏林墙倒塌", category: "history" },
-  { id: "seed::history::2", term: "登月", category: "history" },
-  { id: "seed::history::3", term: "印刷术发明", category: "history" },
-  { id: "seed::history::4", term: "大宪章签署", category: "history" },
-  { id: "seed::history::5", term: "攻占巴士底狱", category: "history" },
-  { id: "seed::history::6", term: "第一届奥运会", category: "history" },
-  { id: "seed::history::7", term: "青霉素发现", category: "history" },
-  { id: "seed::history::8", term: "莱特兄弟首飞", category: "history" },
-  { id: "seed::history::9", term: "君士坦丁堡陷落", category: "history" },
-  { id: "seed::history::10", term: "波士顿倾茶事件", category: "history" },
-  { id: "seed::history::11", term: "华盛顿大游行", category: "history" },
-  { id: "seed::history::12", term: "丝绸之路开通", category: "history" },
-  { id: "seed::history::13", term: "切尔诺贝利事故", category: "history" },
-  { id: "seed::history::14", term: "长城建成", category: "history" },
-  { id: "seed::history::15", term: "凡尔赛条约", category: "history" },
-  { id: "seed::history::16", term: "第一张照片", category: "history" },
-  { id: "seed::history::17", term: "苏伊士运河通航", category: "history" },
-  { id: "seed::history::18", term: "英国废除奴隶制", category: "history" },
-  { id: "seed::history::19", term: "斯普特尼克号发射", category: "history" },
-  { id: "seed::history::20", term: "佛罗伦萨文艺复兴", category: "history" },
-  { id: "seed::history::21", term: "1929年股市崩盘", category: "history" },
-  { id: "seed::history::22", term: "曼德拉获释", category: "history" },
-  { id: "seed::history::23", term: "金字塔建造", category: "history" },
-  { id: "seed::history::24", term: "首次妇女选举权胜利", category: "history" },
-  { id: "seed::history::25", term: "广岛原子弹爆炸", category: "history" },
-  { id: "seed::history::26", term: "郑和下西洋", category: "history" },
-  { id: "seed::history::27", term: "罗马帝国灭亡", category: "history" },
-  { id: "seed::history::28", term: "互联网发明", category: "history" },
   { id: "seed::literature::1", term: "1984", category: "literature" },
   { id: "seed::literature::2", term: "白鲸", category: "literature" },
   { id: "seed::literature::3", term: "傲慢与偏见", category: "literature" },

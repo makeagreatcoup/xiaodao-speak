@@ -18,7 +18,7 @@ export interface Category {
   blurb: string;
 }
 
-// 从「交谈话题」提取、经筛选保留的 75 条默认话题（3 个深奥主题），见 lib/seed-topics.ts
+// 从「交谈话题」提取、经筛选保留的 47 条默认话题（2 个深奥主题），见 lib/seed-topics.ts
 import { seedTopics } from "./seed-topics";
 
 // 展示用分类（不含 custom，custom 由本地存储动态驱动）
@@ -48,18 +48,12 @@ export const categories: Category[] = [
     blurb: "没有标准答案的词，最适合练「把道理讲圆」的本事。",
   },
 
-  // ===== 从「交谈话题」提取、经筛选保留的 3 个深奥 / 非日常主题 =====
+  // ===== 从「交谈话题」提取、经筛选保留的 2 个深奥 / 非日常主题 =====
   {
     key: "deep-research",
     name: "深度研究",
     tag: "挖深一点",
     blurb: "认知偏误、社会心理，先把资料查透，再开口做一场有东西的演讲。",
-  },
-  {
-    key: "history",
-    name: "历史",
-    tag: "回头看",
-    blurb: "人物、转折、冷知识，从历史里挑一个讲出画面感。",
   },
   {
     key: "literature",
@@ -145,7 +139,7 @@ export const prompts: Prompt[] = [
   { id: "phi-14", term: "自由意志", category: "philosophy", note: "你真能选吗；开讲讲责任和选择到底归不归你。" },
   { id: "phi-15", term: "中庸", category: "philosophy", note: "不偏不倚；开讲讲它不是和稀泥，是分寸感。" },
 
-  // ===== 从「交谈话题」提取、经筛选保留的 75 条深奥话题 =====
+  // ===== 从「交谈话题」提取、经筛选保留的 47 条深奥话题 =====
   ...seedTopics,
 ];
 

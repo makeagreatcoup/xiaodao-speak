@@ -133,7 +133,7 @@ export function PromptStage() {
   // 批量导入弹层
   const [importOpen, setImportOpen] = useState(false);
   const [importText, setImportText] = useState("");
-  const [importCat, setImportCat] = useState<string>("自命题");
+  const [importCat, setImportCat] = useState<string>("");
   // 导入时可归到的内置领域（从 categories 派生，含保留的深奥主题）
   const IMPORT_BUILTINS = useMemo(
     () =>
@@ -333,6 +333,12 @@ export function PromptStage() {
     }
     setEmptyReason("none");
     drawFromPool(pool);
+  }
+
+  // 清除全部「已表达」内容（localStorage 中的 xd-expressed 会随状态变更自动清空）
+  function clearExpressed() {
+    if (expressed.size === 0) return;
+    setExpressed(new Set());
   }
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -936,9 +942,17 @@ export function PromptStage() {
                     </p>
                   ) : (
                     <div className="space-y-1.5">
-                      <p className="mb-2 text-xs text-zinc-400">
-                        共 {expressed.size} 条已表达
-                      </p>
+                      <div className="mb-2 flex items-center justify-between">
+                        <p className="text-xs text-zinc-400">
+                          共 {expressed.size} 条已表达
+                        </p>
+                        <button
+                          onClick={clearExpressed}
+                          className="rounded-full border border-zinc-300 px-3 py-1 text-xs text-zinc-500 transition-colors hover:border-red-400 hover:text-red-500 dark:border-zinc-700 dark:text-zinc-400"
+                        >
+                          清除全部
+                        </button>
+                      </div>
                       {allPrompts
                         .filter((p) => expressed.has(p.id))
                         .map((p) => (
@@ -1041,7 +1055,7 @@ export function PromptStage() {
                 <input
                   value={IMPORT_BUILTINS.some((b) => b.key === importCat) ? "" : importCat}
                   onChange={(e) => setImportCat(e.target.value)}
-                  placeholder="自命题（可自定义命名，如：法律、历史）"
+                  placeholder="自命题（可自定义命名，如：法律、职场）"
                   className="w-48 rounded-full border border-zinc-300 bg-white px-3 py-1 text-xs text-zinc-800 outline-none transition-colors focus:border-accent dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
                 />
               </div>
