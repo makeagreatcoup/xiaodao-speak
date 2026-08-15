@@ -27,9 +27,6 @@ body {
   position: relative;
   height: 200px; /* 与 PromptStage 的 REEL_ROW 一致 */
   overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 .reel-col {
   will-change: transform;
