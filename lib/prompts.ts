@@ -24,7 +24,7 @@ import { seedTopics } from "./seed-topics";
 // 展示用分类（不含 custom，custom 由本地存储动态驱动）
 // 全部是标准学科，话题均取自各学科真实概念表：
 //  · 心理学 —— Buster Benson《Cognitive Bias Cheat Sheet》认知偏误体系
-//  · 哲学 / 经济学 / 社会学 / 科学 / 逻辑与数学 —— 各学科标准概念与议题
+//  · 哲学 / 经济学 / 社会学 / 逻辑与数学 —— 各学科标准概念与议题
 export const categories: Category[] = [
   {
     key: "philosophy",
@@ -51,12 +51,6 @@ export const categories: Category[] = [
     blurb: "科层制、差序格局、沉默的螺旋——把人与群体的运行规律讲清楚。",
   },
   {
-    key: "science",
-    name: "科学",
-    tag: "硬核概念",
-    blurb: "熵、量子纠缠、自然选择——挑一个你半懂不懂的，查明白再开口。",
-  },
-  {
     key: "logic-math",
     name: "逻辑与数学",
     tag: "思维体操",
@@ -67,7 +61,7 @@ export const categories: Category[] = [
     key: "all",
     name: "随机全场",
     tag: "全池混抽",
-    blurb: "六块场子混在一起，抽到谁算谁，主打一个大量随机。",
+    blurb: "五块场子混在一起，抽到谁算谁，主打一个大量随机。",
   },
 ];
 
@@ -98,7 +92,7 @@ export function categoryMeta(key: string): Category {
 }
 
 // ===== 个人词库 =====
-// 个人词库的每个词可带一个领域标签（哲学 / 心理学 / 经济学 / 社会学 / 科学 / 历史学 / 逻辑与数学 / 语言学 / 自命题），
+// 个人词库的每个词可带一个领域标签（哲学 / 心理学 / 经济学 / 社会学 / 逻辑与数学 / 语言学 / 自命题），
 // 导入时指定；抽「随机全场」会混进所有上传词，抽具体领域只会混入该领域的上传词。
 // id 由词本身推导，保证跨会话去重稳定。
 const CUSTOM_PREFIX = "custom::";

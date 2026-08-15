@@ -730,22 +730,31 @@ export function PromptStage() {
         )}
 
         {phase === "speak" && (
-          <button
-            onClick={toggleRunning}
-            className="inline-flex items-center gap-2 rounded-full bg-accent px-7 py-3 font-semibold text-accent-fg transition-transform hover:-translate-y-px active:translate-y-0"
-          >
-            {running ? (
-              <>
-                <StopIcon className="h-4 w-4" />
-                暂停
-              </>
-            ) : (
-              <>
-                <PlayIcon className="h-4 w-4" />
-                继续
-              </>
-            )}
-          </button>
+          <>
+            <button
+              onClick={toggleRunning}
+              className="inline-flex items-center gap-2 rounded-full bg-accent px-7 py-3 font-semibold text-accent-fg transition-transform hover:-translate-y-px active:translate-y-0"
+            >
+              {running ? (
+                <>
+                  <StopIcon className="h-4 w-4" />
+                  暂停
+                </>
+              ) : (
+                <>
+                  <PlayIcon className="h-4 w-4" />
+                  继续
+                </>
+              )}
+            </button>
+            <button
+              onClick={markDone}
+              className="inline-flex items-center gap-2 rounded-full border border-accent px-5 py-3 text-sm font-medium text-accent transition-colors hover:bg-accent/5"
+            >
+              <CheckIcon className="h-4 w-4" />
+              标记已表达，换下一个
+            </button>
+          </>
         )}
 
         {phase === "done" && (

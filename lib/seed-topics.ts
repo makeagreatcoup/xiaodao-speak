@@ -1,11 +1,11 @@
 // 种子话题库：按「真实学科」组织的概念集，主题=学科，话题=该学科里真实存在的概念。
 //
 // 设计原则（回应上一版「自己编主题 + 随意配对」的问题）：
-//  · 主题本身就是标准学科（哲学 / 心理学 / 经济学 / 社会学 / 科学 / 逻辑与数学），
+//  · 主题本身就是标准学科（哲学 / 心理学 / 经济学 / 社会学 / 逻辑与数学），
 //    不是临时拼出来的分类；
 //  · 每个话题都是该学科里真实、可查证的概念（教材 / 文献里实际存在的词），不是编造的词组；
 //  · 心理学取自 Buster Benson《Cognitive Bias Cheat Sheet》认知偏误体系；
-//    其余学科取自各学科标准概念表（哲学概念、经济学名词、社会学理论、科学核心概念、逻辑与数学悖论）。
+//    其余学科取自各学科标准概念表（哲学概念、经济学名词、社会学理论、逻辑与数学悖论）。
 // 每条取概念名作为 term，category 用学科英文 id，与 lib/prompts.ts 的 categories 对应。
 // 仅作静态种子数据，运行时可通过「设置 → 导入」追加个人词库。
 import type { Prompt } from "./prompts";
@@ -146,40 +146,6 @@ export const seedTopics: Prompt[] = [
   { id: "seed::sociology::27", term: "代际流动", category: "sociology" },
   { id: "seed::sociology::28", term: "世俗化", category: "sociology" },
   { id: "seed::sociology::29", term: "相对剥夺感", category: "sociology" },
-
-  // ===== 科学 science：核心科学概念（物理 / 生物 / 宇宙） =====
-  { id: "seed::science::1", term: "量子纠缠", category: "science" },
-  { id: "seed::science::2", term: "熵", category: "science" },
-  { id: "seed::science::3", term: "涌现", category: "science" },
-  { id: "seed::science::4", term: "混沌理论", category: "science" },
-  { id: "seed::science::5", term: "弦理论", category: "science" },
-  { id: "seed::science::6", term: "暗物质", category: "science" },
-  { id: "seed::science::7", term: "暗能量", category: "science" },
-  { id: "seed::science::8", term: "相对论", category: "science" },
-  { id: "seed::science::9", term: "自然选择", category: "science" },
-  { id: "seed::science::10", term: "热力学第二定律", category: "science" },
-  { id: "seed::science::11", term: "黑洞", category: "science" },
-  { id: "seed::science::12", term: "引力波", category: "science" },
-  { id: "seed::science::13", term: "大爆炸", category: "science" },
-  { id: "seed::science::14", term: "希格斯玻色子", category: "science" },
-  { id: "seed::science::15", term: "量子叠加", category: "science" },
-  { id: "seed::science::16", term: "基因编辑", category: "science" },
-  { id: "seed::science::17", term: "表观遗传", category: "science" },
-  { id: "seed::science::18", term: "神经可塑性", category: "science" },
-  { id: "seed::science::19", term: "平行宇宙", category: "science" },
-  { id: "seed::science::20", term: "量子计算", category: "science" },
-  { id: "seed::science::21", term: "费米悖论", category: "science" },
-  { id: "seed::science::22", term: "双缝实验", category: "science" },
-  { id: "seed::science::23", term: "波粒二象性", category: "science" },
-  { id: "seed::science::24", term: "质能方程", category: "science" },
-  { id: "seed::science::25", term: "板块构造", category: "science" },
-  { id: "seed::science::26", term: "温室效应", category: "science" },
-  { id: "seed::science::27", term: "共同祖先", category: "science" },
-  { id: "seed::science::28", term: "有丝分裂", category: "science" },
-  { id: "seed::science::29", term: "核糖体", category: "science" },
-  { id: "seed::science::30", term: "端粒", category: "science" },
-  { id: "seed::science::31", term: "光合作用", category: "science" },
-  { id: "seed::science::32", term: "噬菌体", category: "science" },
 
   // ===== 逻辑与数学 logic-math：悖论、定理与思维工具 =====
   { id: "seed::logic-math::1", term: "芝诺悖论", category: "logic-math" },
