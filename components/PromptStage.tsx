@@ -1024,7 +1024,7 @@ export function PromptStage() {
                                           {p.term}
                                         </span>
                                       );
-                                    })}
+                                    })
                                   )}
                                 </div>
                               )}
