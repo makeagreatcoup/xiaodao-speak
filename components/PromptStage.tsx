@@ -560,41 +560,49 @@ export function PromptStage() {
         </div>
       </div>
 
-      {/* 时间设置：查资料 / 开讲时长（对应参考站 Start 1 min timer 的参数化） */}
-      <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-3">
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-zinc-400">查资料</span>
-          {RESEARCH_DURATIONS.map((d) => (
-            <button
-              key={d.value}
-              onClick={() => changeResearch(d.value)}
-              className={
-                "rounded-full px-3 py-1.5 text-xs font-medium transition-colors " +
-                (d.value === researchDuration
-                  ? "bg-accent/10 text-accent"
-                  : "text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900")
-              }
-            >
-              {d.label}
-            </button>
-          ))}
+      {/* 时间设置：查资料时间 / 表达时间 分两个独立区块（对应参考站 Start 1 min timer 的参数化） */}
+      <div className="mt-6 flex w-full max-w-md flex-col gap-3">
+        <div className="flex flex-col items-center gap-2 rounded-2xl border border-zinc-200 bg-zinc-50/60 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-900/40">
+          <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
+            查资料时间
+          </span>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            {RESEARCH_DURATIONS.map((d) => (
+              <button
+                key={d.value}
+                onClick={() => changeResearch(d.value)}
+                className={
+                  "rounded-full px-3 py-1.5 text-xs font-medium transition-colors " +
+                  (d.value === researchDuration
+                    ? "bg-accent text-accent-fg"
+                    : "text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900")
+                }
+              >
+                {d.label}
+              </button>
+            ))}
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-zinc-400">开讲</span>
-          {SPEAK_DURATIONS.map((d) => (
-            <button
-              key={d.value}
-              onClick={() => changeSpeak(d.value)}
-              className={
-                "rounded-full px-3 py-1.5 text-xs font-medium transition-colors " +
-                (d.value === speakDuration
-                  ? "bg-accent/10 text-accent"
-                  : "text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900")
-              }
-            >
-              {d.label}
-            </button>
-          ))}
+        <div className="flex flex-col items-center gap-2 rounded-2xl border border-zinc-200 bg-zinc-50/60 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-900/40">
+          <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
+            表达时间
+          </span>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            {SPEAK_DURATIONS.map((d) => (
+              <button
+                key={d.value}
+                onClick={() => changeSpeak(d.value)}
+                className={
+                  "rounded-full px-3 py-1.5 text-xs font-medium transition-colors " +
+                  (d.value === speakDuration
+                    ? "bg-accent text-accent-fg"
+                    : "text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900")
+                }
+              >
+                {d.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
