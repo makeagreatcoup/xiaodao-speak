@@ -34,6 +34,19 @@ const SPEAK_DURATIONS = [
   { label: "120 秒", value: 120 },
 ];
 
+// 轮盘：行高 / 动画时长须与 globals.css 的 .reel-window / .reel-row 一致
+const REEL_ROW = 200;
+const REEL_DURATION = 2200; // ms，平滑减速定格
+
+// 拼一段轮盘词列：末尾固定为抽中的词，前面随机铺满
+function buildReel(pool: Prompt[], chosen: Prompt): string[] {
+  const LEN = 24;
+  const arr: string[] = [];
+  for (let i = 0; i < LEN - 1; i++) arr.push(pickRandom(pool).term);
+  arr.push(chosen.term);
+  return arr;
+}
+
 const EXP_KEY = "xd-expressed";
 const CUSTOM_KEY = "xd-custom";
 
@@ -82,6 +95,11 @@ export function PromptStage() {
   const [researchDuration, setResearchDuration] = useState(10 * 60);
   const [speakDuration, setSpeakDuration] = useState(60);
   const [left, setLeft] = useState(60);
+
+  // 轮盘滚动状态
+  const [spinning, setSpinning] = useState(false);
+  const [reelWords, setReelWords] = useState<string[]>([]);
+  const reelRef = useRef<HTMLDivElement | null>(null);
 
   // 批量导入弹层
   const [importOpen, setImportOpen] = useState(false);
@@ -146,6 +164,41 @@ export function PromptStage() {
     };
   }, []);
 
+  // 轮盘滚动：平滑减速定格到抽中的词（无模糊 / 无回弹放大）
+  useEffect(() => {
+    if (!spinning) return;
+    const el = reelRef.current;
+    if (!el || reelWords.length === 0) {
+      setSpinning(false);
+      return;
+    }
+    const target = (reelWords.length - 1) * REEL_ROW;
+    const reduce =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduce) {
+      el.style.transform = `translateY(-${target}px)`;
+      setSpinning(false);
+      return;
+    }
+    const start = performance.now();
+    let raf = 0;
+    const frame = (now: number) => {
+      const t = Math.min(1, (now - start) / REEL_DURATION);
+      const eased = 1 - Math.pow(1 - t, 3); // easeOutCubic
+      el.style.transform = `translateY(-${target * eased}px)`;
+      if (t < 1) {
+        raf = requestAnimationFrame(frame);
+      } else {
+        el.style.transform = `translateY(-${target}px)`;
+        setSpinning(false);
+      }
+    };
+    raf = requestAnimationFrame(frame);
+    return () => cancelAnimationFrame(raf);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [spinning]);
+
   function clearTimers() {
     if (timerRef.current) {
       clearInterval(timerRef.current);
@@ -173,7 +226,10 @@ export function PromptStage() {
       return;
     }
     setEmptyReason("none");
-    drawFromPool(pool);
+    const chosen = pickRandom(pool);
+    setPrompt(chosen);
+    setReelWords(buildReel(pool, chosen));
+    setSpinning(true);
   }
 
   function switchCat(next: CategoryKey) {
@@ -401,16 +457,26 @@ export function PromptStage() {
         )}
       </div>
 
-      {/* 命题卡：大词，整屏居中核心，直接显示（无滚动 / 无模糊 / 无回弹） */}
+      {/* 命题卡：大词轮盘（老虎机），居中核心 */}
       <div className="relative w-full">
         <div className="rounded-3xl border border-zinc-200 bg-white p-6 text-center shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:p-8">
           <div className="reel-window mx-auto" aria-live="polite">
-            {prompt ? (
+            {spinning ? (
+              <div key="reel-col" ref={reelRef} className="reel-col">
+                {reelWords.map((w, i) => (
+                  <div key={i} className="reel-row">
+                    {w}
+                  </div>
+                ))}
+              </div>
+            ) : prompt ? (
               <div key={prompt.id} className="reel-word">
                 {prompt.term}
               </div>
             ) : (
-              <div className="reel-word reel-word--empty">抽一个词</div>
+              <div key="reel-empty" className="reel-word reel-word--empty">
+                抽一个词
+              </div>
             )}
           </div>
 
