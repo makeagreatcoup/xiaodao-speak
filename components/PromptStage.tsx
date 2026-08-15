@@ -86,9 +86,9 @@ function buildPool(
   } else if (cat.startsWith("cat:")) {
     // 自定义命名分类（如 法律 / 历史）
     const name = cat.slice(4);
-    const builtinKey = (["psychology", "economy", "science", "philosophy"] as const).find(
-      (k) => categoryMeta(k).name === name,
-    );
+    const builtinKey = categories.find(
+      (c) => c.key !== "all" && c.key !== "custom" && c.name === name,
+    )?.key;
     base = builtinKey
       ? [...promptsFor(builtinKey), ...customPrompts.filter((p) => p.category === name)]
       : customPrompts.filter((p) => p.category === name);
@@ -353,7 +353,7 @@ export function PromptStage() {
 
   function confirmImport() {
     if (importNew.length === 0) return;
-    // importCat 可能是内置 key（如 psychology）或自定义名称（如 法律 / 自命题）
+    // importCat 可能是内置 key（如 deep-research）或自定义名称（如 法律 / 自命题）
     const catName = IMPORT_BUILTINS.some((b) => b.key === importCat)
       ? categoryMeta(importCat).name
       : importCat.trim() || "自命题";
