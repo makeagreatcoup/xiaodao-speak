@@ -103,6 +103,8 @@ export function PromptStage() {
   const [spinning, setSpinning] = useState(false);
   const [reelWords, setReelWords] = useState<string[]>([]);
   const reelRef = useRef<HTMLDivElement | null>(null);
+  // 抽中的词暂存：滚动期间不写入 prompt，定格结束才显示，避免类别小字提前出现
+  const chosenRef = useRef<Prompt | null>(null);
 
   // 批量导入弹层
   const [importOpen, setImportOpen] = useState(false);
@@ -172,8 +174,6 @@ export function PromptStage() {
     } catch {}
     setExpressed(exp);
     setCustomTerms(cust);
-    const pool = buildPool("all", cust, false, exp);
-    if (pool.length > 0) setPrompt(pickRandom(pool));
   }, []);
 
   // 持久化
@@ -195,6 +195,7 @@ export function PromptStage() {
     if (!spinning) return;
     const el = reelRef.current;
     if (!el || reelWords.length === 0) {
+      setPrompt(chosenRef.current);
       setSpinning(false);
       return;
     }
@@ -204,6 +205,7 @@ export function PromptStage() {
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduce) {
       el.style.transform = `translateY(-${target}px)`;
+      setPrompt(chosenRef.current);
       setSpinning(false);
       return;
     }
@@ -217,6 +219,7 @@ export function PromptStage() {
         raf = requestAnimationFrame(frame);
       } else {
         el.style.transform = `translateY(-${target}px)`;
+        setPrompt(chosenRef.current);
         setSpinning(false);
       }
     };
@@ -253,7 +256,7 @@ export function PromptStage() {
     }
     setEmptyReason("none");
     const chosen = pickRandom(pool);
-    setPrompt(chosen);
+    chosenRef.current = chosen;
     setReelWords(buildReel(pool, chosen));
     setSpinning(true);
   }
@@ -407,12 +410,14 @@ export function PromptStage() {
             ? "这段讲得顺不顺都算数，已记成「已表达」"
             : "小导随机抽一个词，先查资料，再开讲";
 
-  // 轮盘下方小字：说明当前抽题范围 / 定格词的领域类型
-  const typeCaption = prompt
-    ? cat === "all" || cat === "custom"
-      ? `抽题范围 · ${categoryMeta(cat).name}　｜　本词类别 · ${categoryMeta(prompt.category).name}`
-      : `类别 · ${categoryMeta(prompt.category).name}`
-    : `抽题范围 · ${categoryMeta(cat).name}`;
+  // 轮盘下方小字：滚动中清空，词语定格后才显示类型
+  const typeCaption = spinning
+    ? ""
+    : prompt
+      ? cat === "all" || cat === "custom"
+        ? `抽题范围 · ${categoryMeta(cat).name}　｜　本词类别 · ${categoryMeta(prompt.category).name}`
+        : `类别 · ${categoryMeta(prompt.category).name}`
+      : `抽题范围 · ${categoryMeta(cat).name}`;
 
   return (
     <section
@@ -502,10 +507,12 @@ export function PromptStage() {
             )}
           </div>
 
-          {/* 类型说明小字：当前抽题范围 / 定格词的领域 */}
-          <p className="mt-3 text-xs tracking-wide text-zinc-400 dark:text-zinc-500">
-            {typeCaption}
-          </p>
+          {/* 类型说明小字：滚动中清空，词语定格后才显示 */}
+          {typeCaption && (
+            <p className="mt-3 text-xs tracking-wide text-zinc-400 dark:text-zinc-500">
+              {typeCaption}
+            </p>
+          )}
 
           {/* 极简阶段提示 */}
           <p className="mt-1 text-sm text-zinc-400 dark:text-zinc-500">{hint}</p>
