@@ -219,7 +219,7 @@ export function PromptStage() {
       if (p < 1) {
         rafRef.current = requestAnimationFrame(tick);
       } else {
-        el.style.transform = `translateY(${-(N - 1) * REEL_ROW}px)`;
+        el.style.transform = "none";
         el.style.filter = "none";
         rafRef.current = null;
         setSpinning(false);
@@ -531,7 +531,7 @@ export function PromptStage() {
             aria-live="polite"
           >
             {spinning ? (
-              <div ref={reelRef} className="reel-col">
+              <div key="reel-col" ref={reelRef} className="reel-col">
                 {reelSeq.map((w, i) => (
                   <div key={i} className="reel-row">
                     {w}
@@ -540,6 +540,7 @@ export function PromptStage() {
               </div>
             ) : prompt ? (
               <div
+                key="reel-word"
                 className={
                   "reel-word transition-transform duration-300 " +
                   (flash ? "scale-[1.04]" : "scale-100")
@@ -548,7 +549,9 @@ export function PromptStage() {
                 {prompt.term}
               </div>
             ) : (
-              <div className="reel-word reel-word--empty">抽一个词</div>
+              <div key="reel-empty" className="reel-word reel-word--empty">
+                抽一个词
+              </div>
             )}
           </div>
 

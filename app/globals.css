@@ -76,7 +76,7 @@ body {
   font-size: clamp(3.5rem, 9vw, 7.5rem);
   font-weight: 700;
   letter-spacing: -0.01em;
-  color: var(--accent);
+  color: var(--color-accent);
 }
 .reel-word--empty {
   color: #a1a1aa;
