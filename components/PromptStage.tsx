@@ -123,7 +123,6 @@ export function PromptStage() {
   // 轮盘动画状态
   const [reelSeq, setReelSeq] = useState<string[]>([]);
   const [reelFinal, setReelFinal] = useState<Prompt | null>(null);
-  const [flash, setFlash] = useState(false);
   const reelRef = useRef<HTMLDivElement | null>(null);
   const rafRef = useRef<number | null>(null);
 
@@ -207,13 +206,18 @@ export function PromptStage() {
     const N = reelSeq.length;
     const start = performance.now();
     const easeOut = (p: number) => 1 - Math.pow(1 - p, 3);
+    const SETTLE = 0.8; // 最后 20% 做回弹落定，像真老虎机
     const tick = (now: number) => {
       const p = Math.min(1, (now - start) / REEL_DURATION);
-      const e = easeOut(p);
-      const rowFloat = e * (N - 1);
+      let rowFloat = easeOut(p) * (N - 1);
+      if (p > SETTLE) {
+        const q = (p - SETTLE) / (1 - SETTLE); // 0..1
+        const bounce = Math.sin(q * Math.PI) * 0.5 * Math.pow(1 - q, 1.2);
+        rowFloat = (N - 1) + bounce; // q=1 时 bounce=0，精确落定在 N-1
+      }
       const ty = -rowFloat * REEL_ROW;
       const speed = 3 * Math.pow(1 - p, 2); // 导数幅度：开头快、结尾 0
-      const blur = Math.min(3.5, speed * 1.5);
+      const blur = Math.min(4, speed * 1.6);
       el.style.transform = `translateY(${ty}px)`;
       el.style.filter = blur > 0.2 ? `blur(${blur}px)` : "none";
       if (p < 1) {
@@ -223,10 +227,8 @@ export function PromptStage() {
         el.style.filter = "none";
         rafRef.current = null;
         setSpinning(false);
-        setFlash(true); // 导演红闪
         setPrompt(reelFinal);
         setReelSeq([]);
-        window.setTimeout(() => setFlash(false), 480);
       }
     };
     rafRef.current = requestAnimationFrame(tick);
@@ -261,13 +263,11 @@ export function PromptStage() {
       setPrompt(final);
       setSpinning(false);
       setReelSeq([]);
-      setFlash(false);
       return;
     }
     setReelFinal(final);
     setReelSeq(buildReel(pool, final, REEL_ROUNDS));
     setSpinning(true);
-    setFlash(false);
   }
 
   function spin() {
@@ -539,13 +539,7 @@ export function PromptStage() {
                 ))}
               </div>
             ) : prompt ? (
-              <div
-                key="reel-word"
-                className={
-                  "reel-word transition-transform duration-300 " +
-                  (flash ? "scale-[1.04]" : "scale-100")
-                }
-              >
+              <div key="reel-word" className="reel-word">
                 {prompt.term}
               </div>
             ) : (
