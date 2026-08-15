@@ -325,10 +325,13 @@ export function PromptStage() {
     setExpressed(nextExp);
     // 抽下一题（已排除刚标记的）
     const pool = buildPool(cat, customTerms, includeExpressed, nextExp);
+    // 标记后回到空闲态：展示下一个词，由用户决定是否查资料 / 开讲
+    setPhase("idle");
+    setRunning(false);
+    setLeft(speakDuration);
     if (pool.length === 0) {
       setEmptyReason("all-done");
       setPrompt(null);
-      setPhase("idle");
       return;
     }
     setEmptyReason("none");
@@ -401,7 +404,7 @@ export function PromptStage() {
         if (l <= 1) {
           clearTimers();
           setRunning(false);
-          setPhase("done");
+          markDone(); // 表达计时结束：自动记为「已表达」并抽下一题
           return 0;
         }
         return l - 1;
@@ -425,7 +428,7 @@ export function PromptStage() {
             setPhase("ready");
             setLeft(speakDuration);
           } else {
-            setPhase("done");
+            markDone(); // 表达计时结束：自动记为「已表达」并抽下一题
           }
           return 0;
         }
@@ -947,7 +950,7 @@ export function PromptStage() {
                 <div>
                   {expressed.size === 0 ? (
                     <p className="py-10 text-center text-sm text-zinc-400">
-                      还没有标记过「已表达」的内容。抽到一个词、讲完点「标记已表达，换下一个」就会出现在这里。
+                      还没有标记过「已表达」的内容。抽到一个词、讲完等表达计时归零会自动记到这里；讲的过程中也能随时点「标记已表达，换下一个」。
                     </p>
                   ) : (
                     <div className="space-y-1.5">
