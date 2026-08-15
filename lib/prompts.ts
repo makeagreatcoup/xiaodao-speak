@@ -10,7 +10,8 @@ export interface Prompt {
   id: string;
   /** 单个词 / 概念：抽到一个，去查它、解释它 */
   term: string;
-  category: CategoryKey;
+  /** 领域：内置用 CategoryKey，个人词库用自定义名称（如 心理学 / 法律 / 自命题） */
+  category: string;
   /** 小导支招：一个查资料角度 + 一个开讲角度 */
   note?: string;
 }
@@ -132,10 +133,18 @@ export function promptsFor(key: CategoryKey): Prompt[] {
   return prompts.filter((p) => p.category === key);
 }
 
-export function categoryMeta(key: CategoryKey): Category {
-  const found = categories.find((c) => c.key === key);
-  if (found) return found;
-  return { key: "custom", name: "我的命题", tag: "自命题", blurb: "你自己往里加的词。" };
+export function categoryMeta(key: string): Category {
+  const byKey = categories.find((c) => c.key === key);
+  if (byKey) return byKey;
+  const byName = categories.find((c) => c.name === key);
+  if (byName) return byName;
+  // 个人词库的自定义领域名（如「法律」「历史」），或回退到自命题
+  return {
+    key: "custom",
+    name: key || "自命题",
+    tag: key || "自命题",
+    blurb: "你自己往里加的词。",
+  };
 }
 
 // ===== 个人词库 =====
@@ -150,12 +159,13 @@ export function customPromptId(term: string): string {
 
 export interface CustomPrompt {
   term: string;
-  category: CategoryKey;
+  /** 领域名（如 心理学 / 经济商业 / 法律 / 自命题） */
+  category: string;
 }
 
 export function makeCustomPrompt(
   term: string,
-  category: CategoryKey = "custom",
+  category: string = "自命题",
 ): Prompt {
   return { id: customPromptId(term), term: term.trim(), category };
 }

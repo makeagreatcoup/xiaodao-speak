@@ -69,21 +69,37 @@ function fmt(sec: number): string {
 
 // 个人词库每个词带一个领域标签；具体领域时混入该领域的上传词
 function buildPool(
-  cat: CategoryKey,
+  cat: string,
   custom: CustomPrompt[],
   includeExpressed: boolean,
   expressed: Set<string>,
 ): Prompt[] {
   const customPrompts = custom.map((c) => makeCustomPrompt(c.term, c.category));
   let base: Prompt[];
-  if (cat === "all") base = [...promptsFor("all"), ...customPrompts];
-  else if (cat === "custom") base = customPrompts;
-  else base = [...promptsFor(cat), ...customPrompts.filter((p) => p.category === cat)];
+  if (cat === "all") {
+    base = [...promptsFor("all"), ...customPrompts];
+  } else if (cat === "mine") {
+    // 我的命题：所有上传词
+    base = customPrompts;
+  } else if (cat.startsWith("cat:")) {
+    // 自定义命名分类（如 法律 / 历史）
+    const name = cat.slice(4);
+    const builtinKey = (["psychology", "economy", "science", "philosophy"] as const).find(
+      (k) => categoryMeta(k).name === name,
+    );
+    base = builtinKey
+      ? [...promptsFor(builtinKey), ...customPrompts.filter((p) => p.category === name)]
+      : customPrompts.filter((p) => p.category === name);
+  } else {
+    // 内置领域 key：内置该领域 + 上传里归到同名领域的词
+    const name = categoryMeta(cat).name;
+    base = [...promptsFor(cat as CategoryKey), ...customPrompts.filter((p) => p.category === name)];
+  }
   return includeExpressed ? base : base.filter((p) => !expressed.has(p.id));
 }
 
 export function PromptStage() {
-  const [cat, setCat] = useState<CategoryKey>("all");
+  const [cat, setCat] = useState<string>("all");
   const [prompt, setPrompt] = useState<Prompt | null>(null);
 
   const [customTerms, setCustomTerms] = useState<CustomPrompt[]>([]);
@@ -109,7 +125,14 @@ export function PromptStage() {
   // 批量导入弹层
   const [importOpen, setImportOpen] = useState(false);
   const [importText, setImportText] = useState("");
-  const [importCat, setImportCat] = useState<CategoryKey>("custom");
+  const [importCat, setImportCat] = useState<string>("自命题");
+  // 导入时可归到的内置领域（其余为自定义命名）
+  const IMPORT_BUILTINS = [
+    { key: "psychology", name: "心理学" },
+    { key: "economy", name: "经济商业" },
+    { key: "science", name: "科学科技" },
+    { key: "philosophy", name: "思维哲学" },
+  ];
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -133,6 +156,14 @@ export function PromptStage() {
     () => parsed.filter((t) => !importDupes.includes(t)),
     [parsed, importDupes],
   );
+  // 个人词库里出现过的自定义领域名（去掉与内置重名的，避免重复芯片）
+  const customCats = useMemo(
+    () =>
+      Array.from(new Set(customTerms.map((c) => c.category))).filter(
+        (name) => !IMPORT_BUILTINS.some((b) => b.name === name),
+      ),
+    [customTerms],
+  );
 
   // 载入本地存储：已表达 + 个人词库，并完成首抽（直接定格，无动画）
   useEffect(() => {
@@ -145,26 +176,19 @@ export function PromptStage() {
     try {
       const c = JSON.parse(localStorage.getItem(CUSTOM_KEY) || "[]");
       if (Array.isArray(c)) {
-        const VALID: CategoryKey[] = [
-          "psychology",
-          "economy",
-          "science",
-          "philosophy",
-          "all",
-          "custom",
-        ];
         cust = c
           .map((x: unknown): CustomPrompt | null => {
             if (typeof x === "string") {
               const t = x.trim();
-              return t ? { term: t, category: "custom" } : null;
+              return t ? { term: t, category: "自命题" } : null;
             }
             if (x && typeof x === "object" && "term" in (x as object)) {
-              const o = x as { term?: string; category?: CategoryKey };
+              const o = x as { term?: string; category?: string };
               const t = (o.term ?? "").trim();
               if (!t) return null;
-              const cat: CategoryKey =
-                o.category && VALID.includes(o.category) ? o.category : "custom";
+              // 旧数据里的 "custom"/"all" 一律归为「自命题」
+              const raw = (o.category ?? "").trim();
+              const cat = raw === "custom" || raw === "all" || raw === "" ? "自命题" : raw;
               return { term: t, category: cat };
             }
             return null;
@@ -250,7 +274,7 @@ export function PromptStage() {
     setLeft(speakDuration);
     const pool = buildPool(cat, customTerms, includeExpressed, expressed);
     if (pool.length === 0) {
-      setEmptyReason(cat === "custom" ? "no-custom" : "all-done");
+      setEmptyReason(cat === "mine" || cat.startsWith("cat:") ? "no-custom" : "all-done");
       setPrompt(null);
       return;
     }
@@ -261,7 +285,7 @@ export function PromptStage() {
     setSpinning(true);
   }
 
-  function switchCat(next: CategoryKey) {
+  function switchCat(next: string) {
     if (next === cat) return;
     clearTimers();
     setCat(next);
@@ -270,7 +294,7 @@ export function PromptStage() {
     setLeft(speakDuration);
     const pool = buildPool(next, customTerms, includeExpressed, expressed);
     if (pool.length === 0) {
-      setEmptyReason(next === "custom" ? "no-custom" : "all-done");
+      setEmptyReason(next === "mine" || next.startsWith("cat:") ? "no-custom" : "all-done");
       setPrompt(null);
       return;
     }
@@ -307,9 +331,13 @@ export function PromptStage() {
 
   function confirmImport() {
     if (importNew.length === 0) return;
+    // importCat 可能是内置 key（如 psychology）或自定义名称（如 法律 / 自命题）
+    const catName = IMPORT_BUILTINS.some((b) => b.key === importCat)
+      ? categoryMeta(importCat).name
+      : importCat.trim() || "自命题";
     const next: CustomPrompt[] = [
       ...customTerms,
-      ...importNew.map((t) => ({ term: t, category: importCat })),
+      ...importNew.map((t) => ({ term: t, category: catName })),
     ];
     setCustomTerms(next);
     setImportOpen(false);
@@ -410,14 +438,24 @@ export function PromptStage() {
             ? "这段讲得顺不顺都算数，已记成「已表达」"
             : "小导随机抽一个词，先查资料，再开讲";
 
+  // 抽题范围标签（cat 可能是内置 key / all / mine / cat:名称）
+  const catLabel = (c: string): string =>
+    c === "all"
+      ? "随机全场"
+      : c === "mine"
+        ? "我的命题"
+        : c.startsWith("cat:")
+          ? c.slice(4)
+          : categoryMeta(c).name;
+
   // 轮盘下方小字：滚动中清空，词语定格后才显示类型
   const typeCaption = spinning
     ? ""
     : prompt
-      ? cat === "all" || cat === "custom"
-        ? `抽题范围 · ${categoryMeta(cat).name}　｜　本词类别 · ${categoryMeta(prompt.category).name}`
+      ? cat === "all" || cat === "mine" || cat.startsWith("cat:")
+        ? `抽题范围 · ${catLabel(cat)}　｜　本词类别 · ${categoryMeta(prompt.category).name}`
         : `类别 · ${categoryMeta(prompt.category).name}`
-      : `抽题范围 · ${categoryMeta(cat).name}`;
+      : `抽题范围 · ${catLabel(cat)}`;
 
   return (
     <section
@@ -469,12 +507,31 @@ export function PromptStage() {
             </button>
           );
         })}
+        {customCats.length > 0 && (
+          customCats.map((name) => {
+            const active = cat === `cat:${name}`;
+            return (
+              <button
+                key={`cat:${name}`}
+                onClick={() => switchCat(`cat:${name}`)}
+                className={
+                  "rounded-full px-4 py-1.5 text-sm font-medium transition-colors " +
+                  (active
+                    ? "bg-accent text-accent-fg"
+                    : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800")
+                }
+              >
+                {name}
+              </button>
+            );
+          })
+        )}
         {customTerms.length > 0 && (
           <button
-            onClick={() => switchCat("custom")}
+            onClick={() => switchCat("mine")}
             className={
               "rounded-full px-4 py-1.5 text-sm font-medium transition-colors " +
-              (cat === "custom"
+              (cat === "mine"
                 ? "bg-accent text-accent-fg"
                 : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800")
             }
@@ -737,27 +794,31 @@ export function PromptStage() {
               <div className="mb-1.5 text-xs font-semibold text-zinc-500 dark:text-zinc-400">
                 这批命题归为
               </div>
-              <div className="flex flex-wrap gap-2">
-                {[
-                  { key: "psychology", name: "心理学" },
-                  { key: "economy", name: "经济商业" },
-                  { key: "science", name: "科学科技" },
-                  { key: "philosophy", name: "思维哲学" },
-                  { key: "custom", name: "自命题" },
-                ].map((o) => (
-                  <button
-                    key={o.key}
-                    onClick={() => setImportCat(o.key as CategoryKey)}
-                    className={
-                      "rounded-full px-3 py-1 text-xs font-medium transition-colors " +
-                      (importCat === o.key
-                        ? "bg-accent text-accent-fg"
-                        : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800")
-                    }
-                  >
-                    {o.name}
-                  </button>
-                ))}
+              <div className="flex flex-wrap items-center gap-2">
+                {IMPORT_BUILTINS.map((o) => {
+                  const active = importCat === o.key;
+                  return (
+                    <button
+                      key={o.key}
+                      onClick={() => setImportCat(o.key)}
+                      className={
+                        "rounded-full px-3 py-1 text-xs font-medium transition-colors " +
+                        (active
+                          ? "bg-accent text-accent-fg"
+                          : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800")
+                      }
+                    >
+                      {o.name}
+                    </button>
+                  );
+                })}
+                {/* 自定义命名：不输则默认「自命题」 */}
+                <input
+                  value={IMPORT_BUILTINS.some((b) => b.key === importCat) ? "" : importCat}
+                  onChange={(e) => setImportCat(e.target.value)}
+                  placeholder="自命题（可自定义命名，如：法律、历史）"
+                  className="w-48 rounded-full border border-zinc-300 bg-white px-3 py-1 text-xs text-zinc-800 outline-none transition-colors focus:border-accent dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+                />
               </div>
             </div>
 
