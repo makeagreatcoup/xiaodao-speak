@@ -338,6 +338,16 @@ export function PromptStage() {
     drawFromPool(pool);
   }
 
+  // 仅记为「已表达」，不自动抽下一题：计时归零时调用，停在 done 态由用户手动「抽命题」
+  function markExpressedOnly() {
+    if (!prompt) return;
+    const nextExp = new Set(expressed);
+    nextExp.add(prompt.id);
+    setExpressed(nextExp);
+    setPhase("done");
+    setRunning(false);
+  }
+
   // 清除全部「已表达」内容（localStorage 中的 xd-expressed 会随状态变更自动清空）
   function clearExpressed() {
     if (expressed.size === 0) return;
@@ -404,7 +414,7 @@ export function PromptStage() {
         if (l <= 1) {
           clearTimers();
           setRunning(false);
-          markDone(); // 表达计时结束：自动记为「已表达」并抽下一题
+          markExpressedOnly(); // 表达计时结束：仅记为「已表达」，停在 done 态等用户手动抽命题
           return 0;
         }
         return l - 1;
@@ -428,7 +438,7 @@ export function PromptStage() {
             setPhase("ready");
             setLeft(speakDuration);
           } else {
-            markDone(); // 表达计时结束：自动记为「已表达」并抽下一题
+            markExpressedOnly(); // 表达计时结束：仅记为「已表达」，停在 done 态等用户手动抽命题
           }
           return 0;
         }
@@ -761,13 +771,10 @@ export function PromptStage() {
         )}
 
         {phase === "done" && (
-          <button
-            onClick={markDone}
-            className="inline-flex items-center gap-2 rounded-full bg-accent px-7 py-3 font-semibold text-accent-fg transition-transform hover:-translate-y-px active:translate-y-0"
-          >
+          <div className="inline-flex items-center gap-2 rounded-full bg-emerald-500/10 px-5 py-3 text-sm font-semibold text-emerald-600 dark:text-emerald-400">
             <CheckIcon className="h-4 w-4" />
-            标记已表达，换下一个
-          </button>
+            已记为「已表达」，点「抽命题」开始下一个
+          </div>
         )}
 
         {(phase === "research" || phase === "ready" || phase === "speak") && (
