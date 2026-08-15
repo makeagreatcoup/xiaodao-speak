@@ -215,7 +215,11 @@ export function PromptStage() {
             const id = o.id ?? "";
             if (!id) continue;
             const m = META_BY_ID.get(id);
-            rec = { id, term: o.term ?? m?.term ?? id, category: o.category ?? m?.category ?? "—" };
+            const term = o.term ?? m?.term;
+            const category = o.category ?? m?.category ?? "—";
+            // 既没存词名、词库也查不到 → 丢弃，绝不把原始 id 当名字显示出来
+            if (!term) continue;
+            rec = { id, term, category };
           } else {
             continue;
           }
