@@ -17,6 +17,7 @@ import {
   categories,
   parseWordList,
   makeCustomPrompt,
+  categoryMeta,
   type CategoryKey,
   type Prompt,
   type CustomPrompt,
@@ -406,6 +407,13 @@ export function PromptStage() {
             ? "这段讲得顺不顺都算数，已记成「已表达」"
             : "小导随机抽一个词，先查资料，再开讲";
 
+  // 轮盘下方小字：说明当前抽题范围 / 定格词的领域类型
+  const typeCaption = prompt
+    ? cat === "all" || cat === "custom"
+      ? `抽题范围 · ${categoryMeta(cat).name}　｜　本词类别 · ${categoryMeta(prompt.category).name}`
+      : `类别 · ${categoryMeta(prompt.category).name}`
+    : `抽题范围 · ${categoryMeta(cat).name}`;
+
   return (
     <section
       id="stage"
@@ -494,8 +502,13 @@ export function PromptStage() {
             )}
           </div>
 
+          {/* 类型说明小字：当前抽题范围 / 定格词的领域 */}
+          <p className="mt-3 text-xs tracking-wide text-zinc-400 dark:text-zinc-500">
+            {typeCaption}
+          </p>
+
           {/* 极简阶段提示 */}
-          <p className="mt-3 text-sm text-zinc-400 dark:text-zinc-500">{hint}</p>
+          <p className="mt-1 text-sm text-zinc-400 dark:text-zinc-500">{hint}</p>
         </div>
       </div>
 
