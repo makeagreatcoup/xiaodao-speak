@@ -48,7 +48,7 @@ const SPEAK_DURATIONS = [
 const EXP_KEY = "xd-expressed";
 const CUSTOM_KEY = "xd-custom";
 
-const REEL_ROW = 140; // 单行高度，需与 globals.css 的 .reel-row 一致
+const REEL_ROW = 240; // 单行高度，需与 globals.css 的 .reel-row 一致（展示用，放大）
 const REEL_ROUNDS = 26; // 轮盘掠过的候选词数量
 const REEL_DURATION = 2300; // 轮盘滚动时长 ms
 
@@ -507,8 +507,8 @@ export function PromptStage() {
       </div>
 
       {/* 计时环 + 控制 */}
-      <div className="mt-6 flex flex-col items-center">
-        <div className="relative h-[140px] w-[140px]">
+      <div className="mt-8 flex flex-col items-center">
+        <div className="relative h-[220px] w-[220px]">
           <svg viewBox="0 0 180 180" className="h-full w-full -rotate-90" aria-hidden>
             <circle
               cx="90"
@@ -533,11 +533,11 @@ export function PromptStage() {
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             {phase === "done" ? (
-              <span className="text-xl font-bold text-accent">讲完啦</span>
+              <span className="text-3xl font-bold text-accent">讲完啦</span>
             ) : (
               <span
                 className={
-                  "font-mono text-4xl font-semibold tabular-nums tracking-tight " +
+                  "font-mono text-6xl font-semibold tabular-nums tracking-tight " +
                   (lowTime ? "text-accent" : "text-zinc-900 dark:text-zinc-50")
                 }
               >
