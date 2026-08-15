@@ -29,29 +29,30 @@ body {
   overflow: hidden;
   border-radius: 18px;
 }
-.reel-window::before,
-.reel-window::after {
+/* 渐隐遮罩只在滚动时生效；定格后去掉，否则会洗白大词的上/下三分之一 */
+.reel-window.is-spinning::before,
+.reel-window.is-spinning::after {
   content: "";
   position: absolute;
   left: 0;
   right: 0;
-  height: 44px;
+  height: 36px;
   z-index: 2;
   pointer-events: none;
 }
-.reel-window::before {
+.reel-window.is-spinning::before {
   top: 0;
-  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0));
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0));
 }
-.reel-window::after {
+.reel-window.is-spinning::after {
   bottom: 0;
-  background: linear-gradient(to top, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0));
+  background: linear-gradient(to top, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0));
 }
-.dark .reel-window::before {
-  background: linear-gradient(to bottom, rgba(24, 24, 27, 0.96), rgba(24, 24, 27, 0));
+.dark .reel-window.is-spinning::before {
+  background: linear-gradient(to bottom, rgba(24, 24, 27, 0.92), rgba(24, 24, 27, 0));
 }
-.dark .reel-window::after {
-  background: linear-gradient(to top, rgba(24, 24, 27, 0.96), rgba(24, 24, 27, 0));
+.dark .reel-window.is-spinning::after {
+  background: linear-gradient(to top, rgba(24, 24, 27, 0.92), rgba(24, 24, 27, 0));
 }
 .reel-col {
   will-change: transform, filter;

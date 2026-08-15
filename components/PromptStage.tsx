@@ -441,6 +441,17 @@ export function PromptStage() {
             ? "这段讲完了"
             : "准备就绪";
 
+  const hint =
+    phase === "research"
+      ? "打开浏览器，查它的来历、案例和反面观点"
+      : phase === "ready"
+        ? "查得差不多了？合上屏幕，用 1 分钟讲清楚"
+        : phase === "speak"
+          ? "别看屏幕，开口就讲，卡壳也别停"
+          : phase === "done"
+            ? "这段讲得顺不顺都算数，已记成「已表达」"
+            : "小导随机抽一个词，先查资料，再开讲";
+
   return (
     <section
       id="stage"
@@ -463,8 +474,11 @@ export function PromptStage() {
           className="pointer-events-none absolute -inset-10 -z-10 rounded-[3rem] bg-accent/10 blur-3xl"
         />
         <div className="rounded-3xl border border-zinc-200 bg-white p-6 text-center shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:p-8">
-          {/* 固定高度窗：滚动与定格共用，杜绝选中后整块上移 */}
-          <div className="reel-window mx-auto" aria-live="polite">
+          {/* 固定高度窗：滚动与定格共用，杜绝选中后整块上移；is-spinning 时才显遮罩 */}
+          <div
+            className={"reel-window mx-auto" + (spinning ? " is-spinning" : "")}
+            aria-live="polite"
+          >
             {spinning ? (
               <div ref={reelRef} className="reel-col">
                 {reelSeq.map((w, i) => (
@@ -486,6 +500,9 @@ export function PromptStage() {
               <div className="reel-word reel-word--empty">抽一个词</div>
             )}
           </div>
+
+          {/* 极简阶段提示：随阶段变化的一行小字，告诉观众现在在干嘛 */}
+          <p className="mt-3 text-sm text-zinc-400 dark:text-zinc-500">{hint}</p>
         </div>
       </div>
 
