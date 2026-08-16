@@ -617,6 +617,18 @@ export function PromptStage() {
           )}
           {isFs ? "退出全屏" : "全屏"}
         </button>
+        <button
+          onClick={() => {
+            primeAudio();
+            playResearchEnd();
+          }}
+          aria-label="试听提示音"
+          title="试听提示音（点击立即播放一段，验证音频是否可用）"
+          className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white/80 px-3 py-2 text-sm font-medium text-zinc-600 shadow-sm backdrop-blur transition-colors hover:text-accent dark:border-zinc-800 dark:bg-zinc-900/80 dark:text-zinc-300"
+        >
+          <SpeakerLoudIcon className="h-4 w-4" />
+          试听
+        </button>
       </div>
 
       {/* 头部：站点名 + 一句话说明 */}

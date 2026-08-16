@@ -4,6 +4,7 @@
 // - 表达结束（时间到）：四音 G4-C5-E5-G5，更饱满
 
 let ctx: AudioContext | null = null;
+let unlocked = false;
 
 function getCtx(): AudioContext | null {
   if (typeof window === "undefined") return null;
@@ -13,17 +14,36 @@ function getCtx(): AudioContext | null {
       (window as unknown as { webkitAudioContext?: typeof AudioContext })
         .webkitAudioContext;
     if (!AC) return null;
-    ctx = new AC();
+    try {
+      ctx = new AC();
+    } catch {
+      return null;
+    }
   }
-  // 浏览器策略要求音频在用户手势后才能播放；这里在计时开始（点击）时调用过一次，
-  // 计时结束触发音效时通常已经在 running 状态。
-  if (ctx.state === "suspended") void ctx.resume();
   return ctx;
 }
 
-// 在用户手势（点击开始）时预热音频上下文，避免计时结束播放时仍处于 suspended。
+// 在用户手势（点击开始 / 试听）内调用：创建并解锁音频上下文。
+// 部分浏览器（尤其移动端 Safari、微信/飞书内置浏览器）要求先播放一个极短
+// (静音) 振荡器才能真正把 ctx 推进到 running 状态，否则后续调度不发声。
 export function primeAudio() {
-  getCtx();
+  const ac = getCtx();
+  if (!ac) return;
+  if (ac.state === "suspended") void ac.resume();
+  if (!unlocked) {
+    try {
+      const osc = ac.createOscillator();
+      const gain = ac.createGain();
+      gain.gain.value = 0; // 静音，仅用于解锁
+      osc.connect(gain);
+      gain.connect(ac.destination);
+      osc.start(0);
+      osc.stop(0.001);
+      unlocked = true;
+    } catch {
+      /* ignore */
+    }
+  }
 }
 
 function tone(
@@ -32,7 +52,7 @@ function tone(
   startAt: number,
   duration: number,
   type: OscillatorType = "sine",
-  peak = 0.22,
+  peak = 0.35,
 ) {
   const osc = ac.createOscillator();
   const gain = ac.createGain();
@@ -47,22 +67,30 @@ function tone(
   osc.stop(startAt + duration + 0.03);
 }
 
-// 查资料计时结束：上行三音（C5 → E5 → G5），提示「该开口讲了」。
-export function playResearchEnd() {
+function play(end: "research" | "speak") {
   const ac = getCtx();
   if (!ac) return;
+  if (ac.state === "suspended") void ac.resume();
   const t = ac.currentTime;
-  [523.25, 659.25, 783.99].forEach((f, i) => {
-    tone(ac, f, t + i * 0.13, 0.2, "sine", 0.22);
-  });
+  if (end === "research") {
+    // 查资料结束：上行三音 C5-E5-G5，提示「该开口讲了」
+    [523.25, 659.25, 783.99].forEach((f, i) => {
+      tone(ac, f, t + i * 0.13, 0.2, "sine", 0.35);
+    });
+  } else {
+    // 表达结束：四音 G4-C5-E5-G5，提示「时间到」
+    [392, 523.25, 659.25, 784].forEach((f, i) => {
+      tone(ac, f, t + i * 0.15, 0.24, "triangle", 0.35);
+    });
+  }
+}
+
+// 查资料计时结束：上行三音（C5 → E5 → G5），提示「该开口讲了」。
+export function playResearchEnd() {
+  play("research");
 }
 
 // 表达计时结束：四音（G4 → C5 → E5 → G5），提示「时间到」。
 export function playSpeakEnd() {
-  const ac = getCtx();
-  if (!ac) return;
-  const t = ac.currentTime;
-  [392, 523.25, 659.25, 784].forEach((f, i) => {
-    tone(ac, f, t + i * 0.15, 0.24, "triangle", 0.2);
-  });
+  play("speak");
 }
