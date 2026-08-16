@@ -27,7 +27,7 @@ import {
   type Prompt,
   type CustomPrompt,
 } from "@/lib/prompts";
-import { playResearchEnd, playSpeakEnd, playSpinEnd, primeAudio } from "@/lib/sound";
+import { playResearchEnd, playSpeakEnd, playSpinEnd, playTick, primeAudio } from "@/lib/sound";
 
 // 「已表达」记录类型：把词本身（term + 学科）也存进 localStorage，
 // 这样即使将来种子 id 重新编号，记过的词也能在列表里显示，不再依赖 id 去词库反查。
@@ -356,14 +356,21 @@ export function PromptStage() {
     }
     const start = performance.now();
     let raf = 0;
+    let lastTick = 0; // 滚动「咔哒」声节流
     const frame = (now: number) => {
       const t = Math.min(1, (now - start) / REEL_DURATION);
       const eased = 1 - Math.pow(1 - t, 3); // easeOutCubic
       el.style.transform = `translateY(-${target * eased}px)`;
+      // 滚动过程按节拍播「咔哒」声（越接近落定越慢，听感像真实轮盘减速）
+      if (!muted && now - lastTick > 55) {
+        playTick();
+        lastTick = now;
+      }
       if (t < 1) {
         raf = requestAnimationFrame(frame);
       } else {
         el.style.transform = `translateY(-${target}px)`;
+        if (!muted) playSpinEnd(); // 抽中落定：一声「叮咚」确认抽到了词
         setPrompt(chosenRef.current);
         setSpinning(false);
       }
