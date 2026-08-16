@@ -33,16 +33,15 @@ type ExpressedRecord = { id: string; term: string; category: string };
 const META_BY_ID = new Map(prompts.map((p) => [p.id, { term: p.term, category: p.category }]));
 
 const RESEARCH_DURATIONS = [
-  { label: "5 分钟", value: 5 * 60 },
   { label: "10 分钟", value: 10 * 60 },
   { label: "15 分钟", value: 15 * 60 },
+  { label: "20 分钟", value: 20 * 60 },
 ];
 
 const SPEAK_DURATIONS = [
-  { label: "30 秒", value: 30 },
-  { label: "60 秒", value: 60 },
-  { label: "90 秒", value: 90 },
-  { label: "120 秒", value: 120 },
+  { label: "1 分钟", value: 60 },
+  { label: "2 分钟", value: 120 },
+  { label: "3 分钟", value: 180 },
 ];
 
 // 轮盘：行高 / 动画时长须与 globals.css 的 .reel-window / .reel-row 一致
@@ -563,7 +562,7 @@ export function PromptStage() {
           </span>
         </h1>
         <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-          抽个词，先查资料，再开口讲 · 练即席表达
+          抽个词，先查资料，再开口练即兴表达
         </p>
       </header>
 
