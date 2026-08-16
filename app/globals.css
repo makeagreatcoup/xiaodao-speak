@@ -20,6 +20,14 @@ body {
     "Microsoft YaHei", sans-serif;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  /* 兜底底色：避免移动端下拉回弹露出纯白（拍照过曝） */
+  background-color: #e4e4e7;
+}
+
+@media (prefers-color-scheme: dark) {
+  body {
+    background-color: #18181b;
+  }
 }
 
 /* 抽题轮盘（老虎机式滚动，无模糊 / 无回弹放大） */
