@@ -193,7 +193,10 @@ export function PromptStage() {
       const sec = sectionRef.current;
       const inner = innerRef.current;
       if (!sec || !inner) return;
-      const avail = sec.clientHeight;
+      const secH = sec.clientHeight;
+      // 预留上下边距（约视口高 6%，32~80px），让内容不贴边、有呼吸空间
+      const margin = Math.min(80, Math.max(32, Math.round(secH * 0.06)));
+      const avail = secH - margin * 2;
       const need = inner.offsetHeight;
       setScale(need > avail ? Math.min(1, avail / need) : 1);
     };
