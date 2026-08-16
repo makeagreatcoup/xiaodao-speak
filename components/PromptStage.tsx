@@ -139,8 +139,6 @@ export function PromptStage() {
   const reelRef = useRef<HTMLDivElement | null>(null);
   // 抽中的词暂存：滚动期间不写入 prompt，定格结束才显示，避免类别小字提前出现
   const chosenRef = useRef<Prompt | null>(null);
-  // 本轮「洗牌发牌」已发出的词 id：保证抽完一遍前不重复；发完整副自动重洗。
-  const drawnRef = useRef<Set<string>>(new Set());
 
   // 设置面板（由右上角「设置」按钮打开）
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -382,27 +380,13 @@ export function PromptStage() {
     }
   }
 
-  // 洗牌发牌：优先从「本轮还没发过」的词里随机抽一张；都发过了就重洗整副再抽。
-  // 这样在抽完所有词之前绝不重复，避免纯随机连点导致的重复。
-  function pickFromDeck(base: Prompt[]): Prompt | null {
-    if (base.length === 0) return null;
-    const rem = base.filter((p) => !drawnRef.current.has(p.id));
-    if (rem.length === 0) {
-      drawnRef.current = new Set(); // 整副发完，重洗
-      return pickRandom(base);
-    }
-    const chosen = pickRandom(rem);
-    drawnRef.current.add(chosen.id);
-    return chosen;
-  }
-
+  // 纯随机：从当前词池里随机抽一个。重复由「记已表达」踢出词来控制（已表达的不再进池）。
   function drawFromPool(pool: Prompt[]) {
-    const chosen = pickFromDeck(pool);
-    if (!chosen) {
+    if (pool.length === 0) {
       setPrompt(null);
       return;
     }
-    setPrompt(chosen);
+    setPrompt(pickRandom(pool));
   }
 
   function spin() {
@@ -418,7 +402,7 @@ export function PromptStage() {
       return;
     }
     setEmptyReason("none");
-    const chosen = pickFromDeck(pool);
+    const chosen = pickRandom(pool);
     if (!chosen) {
       setEmptyReason("all-done");
       setPrompt(null);
@@ -431,7 +415,6 @@ export function PromptStage() {
 
   function switchCat(next: string) {
     if (next === cat) return;
-    drawnRef.current = new Set(); // 换分类：本轮发牌重置，保证该分类整副不重复
     primeAudio(); // 解锁音频（切分类也会立刻抽到词、落定发声）
     clearTimers();
     setCat(next);
