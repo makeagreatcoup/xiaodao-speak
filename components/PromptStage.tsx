@@ -634,13 +634,8 @@ export function PromptStage() {
     <section
       id="stage"
       ref={sectionRef}
-      className="relative mx-auto flex h-[100dvh] w-full max-w-2xl flex-col items-center overflow-hidden bg-gradient-to-br from-zinc-100 via-zinc-200 to-zinc-300 px-4 sm:px-6 dark:from-zinc-900 dark:via-zinc-950 dark:to-zinc-900"
+      className="relative mx-auto flex h-[100dvh] w-full max-w-2xl flex-col items-center overflow-hidden bg-zinc-200 px-4 sm:px-6 dark:bg-zinc-900"
     >
-      {/* 背景层次：顶部一抹暖色光晕，避免纯色过曝、增强拍照可读性 */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(60%_42%_at_50%_0%,rgba(255,75,51,0.08),transparent_72%)] dark:bg-[radial-gradient(60%_42%_at_50%_0%,rgba(255,75,51,0.14),transparent_72%)]"
-      />
       {/* 右上角：设置入口（已表达可在设置里查看，主屏不挂徽标） */}
       <div className="fixed right-4 top-4 z-40 flex items-center gap-2">
         <button
