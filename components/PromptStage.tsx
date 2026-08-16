@@ -13,6 +13,8 @@ import {
   GearIcon,
   ChevronDownIcon,
   SpeakerOffIcon,
+  EnterFullScreenIcon,
+  ExitFullScreenIcon,
 } from "@radix-ui/react-icons";
 import {
   prompts,
@@ -164,6 +166,22 @@ export function PromptStage() {
       /* ignore */
     }
   }, [muted]);
+
+  // 全屏：跟随浏览器 Fullscreen API，状态监听 fullscreenchange
+  const [isFs, setIsFs] = useState(false);
+  useEffect(() => {
+    const onChange = () => setIsFs(Boolean(document.fullscreenElement));
+    document.addEventListener("fullscreenchange", onChange);
+    return () => document.removeEventListener("fullscreenchange", onChange);
+  }, []);
+  const toggleFs = () => {
+    if (typeof document === "undefined") return;
+    if (document.fullscreenElement) {
+      document.exitFullscreen?.().catch?.(() => {});
+    } else {
+      document.documentElement.requestFullscreen?.().catch?.(() => {});
+    }
+  };
   const [importCat, setImportCat] = useState<string>("");
   // 导入时可归到的内置领域（从 categories 派生，含保留的深奥主题）
   const IMPORT_BUILTINS = useMemo(
@@ -560,7 +578,7 @@ export function PromptStage() {
   return (
     <section
       id="stage"
-      className="relative mx-auto flex min-h-screen max-w-2xl flex-col items-center justify-center px-4 py-6 sm:px-6"
+      className="relative mx-auto flex min-h-dvh w-full max-w-2xl flex-col items-center justify-center overflow-x-hidden px-4 py-6 sm:px-6"
     >
       {/* 右上角：设置入口（已表达可在设置里查看，主屏不挂徽标） */}
       <div className="fixed right-4 top-4 z-40 flex items-center gap-2">
@@ -585,6 +603,19 @@ export function PromptStage() {
         >
           <GearIcon className="h-4 w-4" />
           设置
+        </button>
+        <button
+          onClick={toggleFs}
+          aria-label={isFs ? "退出全屏" : "进入全屏"}
+          title={isFs ? "退出全屏" : "进入全屏"}
+          className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white/80 px-3 py-2 text-sm font-medium text-zinc-600 shadow-sm backdrop-blur transition-colors hover:text-accent dark:border-zinc-800 dark:bg-zinc-900/80 dark:text-zinc-300"
+        >
+          {isFs ? (
+            <ExitFullScreenIcon className="h-4 w-4" />
+          ) : (
+            <EnterFullScreenIcon className="h-4 w-4" />
+          )}
+          {isFs ? "退出全屏" : "全屏"}
         </button>
       </div>
 
