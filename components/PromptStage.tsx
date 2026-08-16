@@ -884,18 +884,13 @@ export function PromptStage() {
                   key={t.k}
                   onClick={() => setSettingsTab(t.k)}
                   className={
-                    "relative flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium transition-colors " +
+                    "relative px-3 py-2.5 text-sm font-medium transition-colors " +
                     (settingsTab === t.k
                       ? "text-accent"
                       : "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200")
                   }
                 >
                   {t.label}
-                  {t.k === "bank" && (
-                    <span className="rounded-full bg-accent/15 px-1.5 py-0.5 text-xs font-semibold text-accent">
-                      {expressedRecords.length}
-                    </span>
-                  )}
                   {settingsTab === t.k && (
                     <span className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-accent" />
                   )}
@@ -960,6 +955,9 @@ export function PromptStage() {
                       <div className="space-y-2">
                         {sections.map((s) => {
                           const open = bankExpanded.has(s.key);
+                          const expressedInSection = s.items.filter(
+                            (p) => expressed.has(p.id) || expressedTerms.has(p.term),
+                          ).length;
                           return (
                             <div
                               key={s.key}
@@ -982,12 +980,17 @@ export function PromptStage() {
                                     {s.items.length}
                                   </span>
                                 </span>
-                                <ChevronDownIcon
-                                  className={
-                                    "h-4 w-4 shrink-0 text-zinc-400 transition-transform " +
-                                    (open ? "rotate-180" : "")
-                                  }
-                                />
+                                <span className="flex items-center gap-2">
+                                  <span className="text-xs font-semibold text-accent">
+                                    {expressedInSection}
+                                  </span>
+                                  <ChevronDownIcon
+                                    className={
+                                      "h-4 w-4 shrink-0 text-zinc-400 transition-transform " +
+                                      (open ? "rotate-180" : "")
+                                    }
+                                  />
+                                </span>
                               </button>
                               {open && (
                                 <div className="flex flex-wrap gap-1.5 p-3">
