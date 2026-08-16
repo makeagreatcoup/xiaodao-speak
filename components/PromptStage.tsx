@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   ReloadIcon,
   PlayIcon,
@@ -182,6 +182,30 @@ export function PromptStage() {
       document.documentElement.requestFullscreen?.().catch?.(() => {});
     }
   };
+  // 自适应：主内容按视口高度等比缩放，任何屏幕高度都完整显示、无页面滚动条
+  const sectionRef = useRef<HTMLElement | null>(null);
+  const innerRef = useRef<HTMLDivElement | null>(null);
+  const [scale, setScale] = useState(1);
+  useLayoutEffect(() => {
+    const fit = () => {
+      const sec = sectionRef.current;
+      const inner = innerRef.current;
+      if (!sec || !inner) return;
+      const avail = sec.clientHeight;
+      const need = inner.offsetHeight;
+      setScale(need > avail ? Math.min(1, avail / need) : 1);
+    };
+    fit();
+    const ro = new ResizeObserver(fit);
+    if (sectionRef.current) ro.observe(sectionRef.current);
+    if (innerRef.current) ro.observe(innerRef.current);
+    window.addEventListener("resize", fit);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", fit);
+    };
+  }, [phase, prompt, cat, spinning]);
+
   const [importCat, setImportCat] = useState<string>("");
   // 导入时可归到的内置领域（从 categories 派生，含保留的深奥主题）
   const IMPORT_BUILTINS = useMemo(
@@ -578,7 +602,8 @@ export function PromptStage() {
   return (
     <section
       id="stage"
-      className="relative mx-auto flex min-h-dvh w-full max-w-2xl flex-col items-center justify-center overflow-x-hidden px-4 py-6 sm:px-6"
+      ref={sectionRef}
+      className="relative mx-auto flex h-[100dvh] w-full max-w-2xl flex-col items-center overflow-hidden px-4 sm:px-6"
     >
       {/* 右上角：设置入口（已表达可在设置里查看，主屏不挂徽标） */}
       <div className="fixed right-4 top-4 z-40 flex items-center gap-2">
@@ -631,6 +656,16 @@ export function PromptStage() {
         </button>
       </div>
 
+      {/* 主内容：按视口高度等比缩放，保证任何屏幕高度都完整显示、无页面滚动条 */}
+      <div className="flex w-full flex-1 flex-col items-center justify-center overflow-hidden">
+        <div
+          ref={innerRef}
+          className="flex w-full flex-col items-center"
+          style={{
+            transform: scale !== 1 ? `scale(${scale})` : undefined,
+            transformOrigin: "center center",
+          }}
+        >
       {/* 头部：站点名 + 一句话说明 */}
       <header className="mb-4 text-center">
         <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
@@ -929,6 +964,8 @@ export function PromptStage() {
             抽命题
           </button>
         )}
+      </div>
+      </div>
       </div>
 
       {/* 设置面板：话题库（按主题浏览）/ 已表达 / 导入 */}
