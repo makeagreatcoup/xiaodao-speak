@@ -12,6 +12,7 @@ import {
   UploadIcon,
   GearIcon,
   ChevronDownIcon,
+  SpeakerOffIcon,
 } from "@radix-ui/react-icons";
 import {
   prompts,
@@ -24,6 +25,7 @@ import {
   type Prompt,
   type CustomPrompt,
 } from "@/lib/prompts";
+import { playResearchEnd, playSpeakEnd, primeAudio } from "@/lib/sound";
 
 // 「已表达」记录类型：把词本身（term + 学科）也存进 localStorage，
 // 这样即使将来种子 id 重新编号，记过的词也能在列表里显示，不再依赖 id 去词库反查。
@@ -145,6 +147,23 @@ export function PromptStage() {
   // 批量导入弹层
   const [importOpen, setImportOpen] = useState(false);
   const [importText, setImportText] = useState("");
+
+  // 声音开关：默认开，跟随 localStorage 持久化
+  const [muted, setMuted] = useState(false);
+  useEffect(() => {
+    try {
+      setMuted(localStorage.getItem("xd-muted") === "1");
+    } catch {
+      /* ignore */
+    }
+  }, []);
+  useEffect(() => {
+    try {
+      localStorage.setItem("xd-muted", muted ? "1" : "0");
+    } catch {
+      /* ignore */
+    }
+  }, [muted]);
   const [importCat, setImportCat] = useState<string>("");
   // 导入时可归到的内置领域（从 categories 派生，含保留的深奥主题）
   const IMPORT_BUILTINS = useMemo(
@@ -434,6 +453,7 @@ export function PromptStage() {
   }
 
   function startResearch() {
+    primeAudio();
     clearTimers();
     setPhase("research");
     setRunning(true);
@@ -443,6 +463,7 @@ export function PromptStage() {
         if (l <= 1) {
           clearTimers();
           setRunning(false);
+          if (!muted) playResearchEnd(); // 查资料结束：提示该开口讲了
           setPhase("ready");
           setLeft(speakDuration);
           return 0;
@@ -453,6 +474,7 @@ export function PromptStage() {
   }
 
   function startSpeak() {
+    primeAudio();
     clearTimers();
     setPhase("speak");
     setRunning(true);
@@ -462,6 +484,7 @@ export function PromptStage() {
         if (l <= 1) {
           clearTimers();
           setRunning(false);
+          if (!muted) playSpeakEnd(); // 表达计时结束：提示时间到
           markExpressedOnly(); // 表达计时结束：仅记为「已表达」，停在 done 态等用户手动抽命题
           return 0;
         }
@@ -476,6 +499,7 @@ export function PromptStage() {
       setRunning(false);
       return;
     }
+    primeAudio();
     setRunning(true);
     timerRef.current = setInterval(() => {
       setLeft((l) => {
@@ -483,9 +507,11 @@ export function PromptStage() {
           clearTimers();
           setRunning(false);
           if (phase === "research") {
+            if (!muted) playResearchEnd(); // 查资料结束：提示该开口讲了
             setPhase("ready");
             setLeft(speakDuration);
           } else {
+            if (!muted) playSpeakEnd(); // 表达计时结束：提示时间到
             markExpressedOnly(); // 表达计时结束：仅记为「已表达」，停在 done 态等用户手动抽命题
           }
           return 0;
@@ -538,6 +564,19 @@ export function PromptStage() {
     >
       {/* 右上角：设置入口（已表达可在设置里查看，主屏不挂徽标） */}
       <div className="fixed right-4 top-4 z-40 flex items-center gap-2">
+        <button
+          onClick={() => setMuted((m) => !m)}
+          aria-label={muted ? "开启声音" : "关闭声音"}
+          title={muted ? "开启声音" : "关闭声音"}
+          className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white/80 px-3 py-2 text-sm font-medium text-zinc-600 shadow-sm backdrop-blur transition-colors hover:text-accent dark:border-zinc-800 dark:bg-zinc-900/80 dark:text-zinc-300"
+        >
+          {muted ? (
+            <SpeakerOffIcon className="h-4 w-4" />
+          ) : (
+            <SpeakerLoudIcon className="h-4 w-4" />
+          )}
+          {muted ? "静音" : "声音"}
+        </button>
         <button
           onClick={() => setSettingsOpen(true)}
           aria-label="设置"
