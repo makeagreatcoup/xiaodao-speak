@@ -27,7 +27,7 @@ import {
   type Prompt,
   type CustomPrompt,
 } from "@/lib/prompts";
-import { playResearchEnd, playSpeakEnd, primeAudio } from "@/lib/sound";
+import { playResearchEnd, playSpeakEnd, playSpinEnd, primeAudio } from "@/lib/sound";
 
 // 「已表达」记录类型：把词本身（term + 学科）也存进 localStorage，
 // 这样即使将来种子 id 重新编号，记过的词也能在列表里显示，不再依赖 id 去词库反查。
@@ -337,6 +337,7 @@ export function PromptStage() {
     if (!el || reelWords.length === 0) {
       setPrompt(chosenRef.current);
       setSpinning(false);
+      if (!muted) playSpinEnd(); // 抽中落定：一声「叮咚」确认抽到了词
       return;
     }
     const target = (reelWords.length - 1) * REEL_ROW;
@@ -347,6 +348,7 @@ export function PromptStage() {
       el.style.transform = `translateY(-${target}px)`;
       setPrompt(chosenRef.current);
       setSpinning(false);
+      if (!muted) playSpinEnd(); // 抽中落定：一声「叮咚」确认抽到了词
       return;
     }
     const start = performance.now();
@@ -384,6 +386,7 @@ export function PromptStage() {
   }
 
   function spin() {
+    primeAudio(); // 先在用户手势内解锁音频，落定时的音效才能响
     clearTimers();
     setPhase("idle");
     setRunning(false);
@@ -403,6 +406,7 @@ export function PromptStage() {
 
   function switchCat(next: string) {
     if (next === cat) return;
+    primeAudio(); // 解锁音频（切分类也会立刻抽到词、落定发声）
     clearTimers();
     setCat(next);
     setPhase("idle");
@@ -416,6 +420,7 @@ export function PromptStage() {
     }
     setEmptyReason("none");
     drawFromPool(pool);
+    if (!muted) playSpinEnd(); // 抽中落定：一声「叮咚」确认抽到了词
   }
 
   function markDone() {

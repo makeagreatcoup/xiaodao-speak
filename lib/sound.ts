@@ -1,5 +1,6 @@
 // 音效：基于 Web Audio API 实时合成提示音，无需任何音频文件。
 // 参考用户提供的「交谈话题.html」中的实现思路：
+// - 抽中落定（轮盘停）：短促上行两音 E5-B5，一声「叮咚」确认抽到了词
 // - 查资料结束（该开口了）：上行三音 C5-E5-G5
 // - 表达结束（时间到）：四音 G4-C5-E5-G5，更饱满
 
@@ -67,7 +68,7 @@ function tone(
   osc.stop(startAt + duration + 0.03);
 }
 
-function play(end: "research" | "speak") {
+function play(end: "research" | "speak" | "spin") {
   const ac = getCtx();
   if (!ac) return;
   if (ac.state === "suspended") void ac.resume();
@@ -77,10 +78,15 @@ function play(end: "research" | "speak") {
     [523.25, 659.25, 783.99].forEach((f, i) => {
       tone(ac, f, t + i * 0.13, 0.2, "sine", 0.35);
     });
-  } else {
+  } else if (end === "speak") {
     // 表达结束：四音 G4-C5-E5-G5，提示「时间到」
     [392, 523.25, 659.25, 784].forEach((f, i) => {
       tone(ac, f, t + i * 0.15, 0.24, "triangle", 0.35);
+    });
+  } else {
+    // 抽中落定：短促上行两音 E5-B5（叮咚），确认抽到了词
+    [659.25, 987.77].forEach((f, i) => {
+      tone(ac, f, t + i * 0.1, 0.14, "sine", 0.3);
     });
   }
 }
@@ -93,4 +99,9 @@ export function playResearchEnd() {
 // 表达计时结束：四音（G4 → C5 → E5 → G5），提示「时间到」。
 export function playSpeakEnd() {
   play("speak");
+}
+
+// 抽命题落定：短促上行两音（E5 → B5），一声「叮咚」确认抽到了词。
+export function playSpinEnd() {
+  play("spin");
 }
