@@ -562,7 +562,7 @@ export function PromptStage() {
           </span>
         </h1>
         <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-          抽个词，先查资料，再开口练即兴表达
+          抽个词，先查资料，再开口，练即兴表达
         </p>
       </header>
 
