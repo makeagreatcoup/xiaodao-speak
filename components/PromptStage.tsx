@@ -497,14 +497,10 @@ export function PromptStage() {
 
   function changeResearch(v: number) {
     setResearchDuration(v);
-    if (phase === "idle" || phase === "ready") setLeft(speakDuration);
   }
 
   function changeSpeak(v: number) {
     setSpeakDuration(v);
-    if (phase === "idle" || phase === "research" || phase === "ready") {
-      setLeft(v);
-    }
   }
 
   const researchShown = phase === "research" ? left : researchDuration;
