@@ -974,6 +974,9 @@ export function PromptStage() {
                       <div className="space-y-2">
                         {sections.map((s) => {
                           const open = bankExpanded.has(s.key);
+                          const expressedInSection = s.items.filter(
+                            (p) => expressed.has(p.id) || expressedTerms.has(p.term),
+                          ).length;
                           return (
                             <div
                               key={s.key}
@@ -994,6 +997,9 @@ export function PromptStage() {
                                   {s.name}
                                   <span className="ml-2 text-xs font-normal text-zinc-400">
                                     {s.items.length}
+                                  </span>
+                                  <span className="ml-2 text-xs font-normal text-accent">
+                                    · 已表达 {expressedInSection}
                                   </span>
                                 </span>
                                 <ChevronDownIcon
