@@ -694,7 +694,7 @@ export function PromptStage() {
       className="relative mx-auto flex h-[100dvh] w-full max-w-3xl flex-col items-center overflow-hidden bg-[#f6f1e8] px-4 sm:px-6 dark:bg-[#161310]"
     >
       {/* 右上角：设置入口（已表达可在设置里查看，主屏不挂徽标） */}
-      <div className="fixed right-4 top-4 z-40 flex items-center gap-2">
+      <div className="float-tools fixed right-4 top-4 z-40 flex items-center gap-2">
         <button
           onClick={() => setMuted((m) => !m)}
           aria-label={muted ? "开启声音" : "关闭声音"}
@@ -706,7 +706,7 @@ export function PromptStage() {
           ) : (
             <SpeakerLoudIcon className="h-4 w-4" />
           )}
-          {muted ? "静音" : "声音"}
+          <span className="float-label">{muted ? "静音" : "声音"}</span>
         </button>
         <button
           onClick={() => setSettingsOpen(true)}
@@ -715,7 +715,7 @@ export function PromptStage() {
           className="inline-flex items-center gap-1.5 rounded-full border border-[#e6dcc6]/70 bg-[#fffdf8]/80 px-3 py-2 text-sm font-medium text-[#5c5346] shadow-sm backdrop-blur transition-colors hover:text-accent dark:border-[#ffffff]/10 dark:bg-[#ffffff]/5 dark:text-[#cfc4b0]"
         >
           <GearIcon className="h-4 w-4" />
-          设置
+          <span className="float-label">设置</span>
         </button>
         <button
           onClick={toggleFs}
@@ -728,7 +728,7 @@ export function PromptStage() {
           ) : (
             <EnterFullScreenIcon className="h-4 w-4" />
           )}
-          {isFs ? "退出全屏" : "全屏"}
+          <span className="float-label">{isFs ? "退出全屏" : "全屏"}</span>
         </button>
       </div>
 
