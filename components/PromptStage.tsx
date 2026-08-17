@@ -585,7 +585,25 @@ export function PromptStage() {
   }
 
   function changeResearch(v: number) {
-    setResearchDuration(v);
+    if (phase === "research") {
+      // 查资料进行中：切换的是「总时长」，剩余时间按差值动态增减
+      // 延长：剩余 + (新总时长 − 旧总时长)；缩短：剩余 − (旧 − 新)
+      const newLeft = left + (v - researchDuration);
+      setResearchDuration(v);
+      if (newLeft <= 0) {
+        // 缩短后剩余耗尽：直接结束查资料，进入「可以开口讲」状态
+        clearTimers();
+        setRunning(false);
+        if (!muted) playResearchEnd();
+        setPhase("ready");
+        setLeft(speakDuration);
+      } else {
+        setLeft(newLeft);
+      }
+    } else {
+      // 未开始 / 已结束：只记录档位，下次开始查资料时按新总时长生效
+      setResearchDuration(v);
+    }
   }
 
   function changeSpeak(v: number) {
@@ -840,6 +858,11 @@ export function PromptStage() {
               <button
                 key={d.value}
                 onClick={() => changeResearch(d.value)}
+                title={
+                  phase === "research"
+                    ? "切换总时长：剩余时间按差值增减，减到 0 立即结束查资料"
+                    : undefined
+                }
                 className={
                   "rounded-full px-3 py-1 text-xs font-medium transition-colors " +
                   (d.value === researchDuration
