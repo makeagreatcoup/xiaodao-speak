@@ -115,14 +115,14 @@ function play(end: "research" | "speak" | "spin") {
   ensureRunning(ac);
   const t = ac.currentTime;
   if (end === "research") {
-    // 查资料结束：上行三音 C5-E5-G5，提示「该开口讲了」
-    [523.25, 659.25, 783.99].forEach((f, i) => {
-      tone(ac, f, t + i * 0.13, 0.2, "sine", 0.35);
+    // 查资料结束：上行四音 C5→E5→G5→C6（清脆铃感，triangle 波更亮），提示「该开口讲了」
+    [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => {
+      tone(ac, f, t + i * 0.14, 0.22, "triangle", i === 3 ? 0.32 : 0.42);
     });
   } else if (end === "speak") {
-    // 表达结束：四音 G4-C5-E5-G5，提示「时间到」
-    [392, 523.25, 659.25, 784].forEach((f, i) => {
-      tone(ac, f, t + i * 0.15, 0.24, "triangle", 0.35);
+    // 表达结束：同音三声「当当当」（闹钟式重复，triangle 波），急促提醒「时间到」
+    [659.25, 659.25, 659.25].forEach((f, i) => {
+      tone(ac, f, t + i * 0.2, i === 2 ? 0.32 : 0.18, "triangle", 0.45);
     });
   } else {
     // 抽中落定：短促上行两音 E5-B5（叮咚），确认抽到了词
