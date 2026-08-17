@@ -79,6 +79,38 @@ function fmt(sec: number): string {
   return `${m}:${String(r).padStart(2, "0")}`;
 }
 
+// 平滑补间一个数字：每帧朝 target 逼近，用于计时数字「滚动」而非硬跳。
+// target 既可以是空闲态的预设总时长，也可以是计时中的真实剩余 left——同一套机制覆盖：
+// ① 空闲点档位时数字平滑切换；② 计时中每秒递减平滑；③ 计时中切档按差值平滑增减。
+function useAnimatedNumber(target: number, speed = 12): number {
+  const [display, setDisplay] = useState(target);
+  const displayRef = useRef(target);
+  const targetRef = useRef(target);
+  const rafRef = useRef(0);
+  useEffect(() => {
+    targetRef.current = target;
+    if (rafRef.current !== 0) return; // 已有补间循环在跑，直接跟随最新 target 即可
+    const step = () => {
+      const d = displayRef.current;
+      const diff = targetRef.current - d;
+      if (Math.abs(diff) < 0.5) {
+        displayRef.current = targetRef.current;
+        setDisplay(targetRef.current);
+        rafRef.current = 0;
+        return;
+      }
+      const delta = Math.max(1, Math.ceil(Math.abs(diff) / speed));
+      const next = d + Math.sign(diff) * delta;
+      displayRef.current = next;
+      setDisplay(next);
+      rafRef.current = requestAnimationFrame(step);
+    };
+    rafRef.current = requestAnimationFrame(step);
+  }, [target, speed]);
+  useEffect(() => () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); }, []);
+  return display;
+}
+
 // 个人词库每个词带一个领域标签；具体领域时混入该领域的上传词
 function buildPool(
   cat: string,
@@ -132,8 +164,6 @@ export function PromptStage() {
   const [researchDuration, setResearchDuration] = useState(10 * 60);
   const [speakDuration, setSpeakDuration] = useState(60);
   const [left, setLeft] = useState(60);
-  // 显示用剩余时间：用 rAF 从真实 left 平滑补间，切换时长时数字滚动而不是硬跳
-  const [displayLeft, setDisplayLeft] = useState(60);
 
   // 轮盘滚动状态
   const [spinning, setSpinning] = useState(false);
@@ -168,35 +198,6 @@ export function PromptStage() {
       /* ignore */
     }
   }, [muted]);
-
-  // 显示剩余时间平滑补间：displayLeft 用 rAF 追向目标，切换时长时数字滚动而非硬跳
-  const targetRef = useRef(60);
-  const displayRef = useRef(60);
-  const rafRef = useRef(0);
-  const animTargetRef = useRef<number | null>(null); // 切换时长时锁定的目标，避免被每秒倒计时侵蚀
-  useEffect(() => {
-    targetRef.current = left;
-    if (rafRef.current !== 0) return; // 已有补间循环在跑
-    const step = () => {
-      const d = displayRef.current;
-      // 切换动画进行中锁定到 newLeft；否则跟随真实剩余 left
-      const target = animTargetRef.current !== null ? animTargetRef.current : targetRef.current;
-      const diff = target - d;
-      if (Math.abs(diff) < 0.5) {
-        displayRef.current = target;
-        setDisplayLeft(target);
-        if (animTargetRef.current !== null) animTargetRef.current = null; // 切换动画结束，恢复跟随倒计时
-        rafRef.current = 0;
-        return;
-      }
-      const delta = Math.max(1, Math.ceil(Math.abs(diff) / 12));
-      const next = d + Math.sign(diff) * delta;
-      displayRef.current = next;
-      setDisplayLeft(next);
-      rafRef.current = requestAnimationFrame(step);
-    };
-    rafRef.current = requestAnimationFrame(step);
-  }, [left]);
 
   // 全屏：跟随浏览器 Fullscreen API，状态监听 fullscreenchange
   const [isFs, setIsFs] = useState(false);
@@ -552,8 +553,6 @@ export function PromptStage() {
     setPhase("research");
     setRunning(true);
     setLeft(researchDuration);
-    setDisplayLeft(researchDuration); // 开始即同步显示，避免从旧值滚动
-    animTargetRef.current = null;
     timerRef.current = setInterval(() => {
       setLeft((l) => {
         if (l <= 1) {
@@ -575,8 +574,6 @@ export function PromptStage() {
     setPhase("speak");
     setRunning(true);
     setLeft(speakDuration);
-    setDisplayLeft(speakDuration); // 开始即同步显示，避免从旧值滚动
-    animTargetRef.current = null;
     timerRef.current = setInterval(() => {
       setLeft((l) => {
         if (l <= 1) {
@@ -634,10 +631,9 @@ export function PromptStage() {
         setLeft(speakDuration);
       } else {
         setLeft(newLeft);
-        animTargetRef.current = newLeft; // 锁定动画目标，避免被每秒倒计时侵蚀
       }
     } else {
-      // 未开始 / 已结束：只记录档位，下次开始查资料时按新总时长生效
+      // 未开始 / 已结束：记录档位，显示数字平滑切到新总时长
       setResearchDuration(v);
     }
   }
@@ -655,15 +651,16 @@ export function PromptStage() {
         markExpressedOnly();
       } else {
         setLeft(newLeft);
-        animTargetRef.current = newLeft; // 锁定动画目标，避免被每秒倒计时侵蚀
       }
     } else {
       setSpeakDuration(v);
     }
   }
 
-  const researchShown = phase === "research" ? displayLeft : researchDuration;
-  const speakShown = phase === "speak" ? displayLeft : speakDuration;
+  // 两个计时数字统一走平滑补间：空闲态跟随预设总时长（切档有动效），
+  // 计时中跟随真实剩余 left（每秒递减平滑，计时中切档按差值平滑增减）。
+  const researchShown = useAnimatedNumber(phase === "research" ? left : researchDuration);
+  const speakShown = useAnimatedNumber(phase === "speak" ? left : speakDuration);
 
   // 抽题范围标签（cat 可能是内置 key / all / mine / cat:名称）
   const catLabel = (c: string): string =>
