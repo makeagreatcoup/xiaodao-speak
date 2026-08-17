@@ -23,13 +23,13 @@ body {
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   /* 兜底底色：暖纸出版感（米白纸张，非纯白避免拍照过曝） */
-  background-color: #f6f1e8;
+  background-color: #e4e5e1;
 }
 
 @media (prefers-color-scheme: dark) {
   body {
     /* 暗色：暖墨底（非冷蓝黑），跟随系统 */
-    background-color: #161310;
+    background-color: #1e201d;
   }
 }
 
@@ -54,7 +54,7 @@ body {
   font-weight: 600;
   letter-spacing: 0.01em;
   line-height: 1.1;
-  color: #23201a;
+  color: #3b3d39;
 }
 /* 定格词：衬线大词，墨色 → 主题红，克制辉光 */
 .reel-word {
@@ -74,7 +74,7 @@ body {
 }
 @keyframes lockIn {
   0% {
-    color: #23201a;
+    color: #3b3d39;
     text-shadow: 0 0 0 rgba(255, 75, 51, 0);
     transform: scale(1);
   }
@@ -88,14 +88,14 @@ body {
   }
 }
 .dark .reel-row {
-  color: #ece3d4;
+  color: #e7e8e1;
 }
 .dark .reel-word {
   animation-name: lockInDark;
 }
 @keyframes lockInDark {
   0% {
-    color: #ece3d4;
+    color: #e7e8e1;
     text-shadow: 0 0 0 rgba(255, 75, 51, 0);
     transform: scale(1);
   }
@@ -109,11 +109,11 @@ body {
   }
 }
 .reel-word--empty {
-  color: #b9ad97;
+  color: #878a82;
   animation: none;
 }
 .dark .reel-word--empty {
-  color: #8a7f6c;
+  color: #7c7e76;
 }
 
 /* Respect reduced motion at the CSS level too */
