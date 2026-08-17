@@ -132,6 +132,8 @@ export function PromptStage() {
   const [researchDuration, setResearchDuration] = useState(10 * 60);
   const [speakDuration, setSpeakDuration] = useState(60);
   const [left, setLeft] = useState(60);
+  // 显示用剩余时间：用 rAF 从真实 left 平滑补间，切换时长时数字滚动而不是硬跳
+  const [displayLeft, setDisplayLeft] = useState(60);
 
   // 轮盘滚动状态
   const [spinning, setSpinning] = useState(false);
@@ -166,6 +168,35 @@ export function PromptStage() {
       /* ignore */
     }
   }, [muted]);
+
+  // 显示剩余时间平滑补间：displayLeft 用 rAF 追向目标，切换时长时数字滚动而非硬跳
+  const targetRef = useRef(60);
+  const displayRef = useRef(60);
+  const rafRef = useRef(0);
+  const animTargetRef = useRef<number | null>(null); // 切换时长时锁定的目标，避免被每秒倒计时侵蚀
+  useEffect(() => {
+    targetRef.current = left;
+    if (rafRef.current !== 0) return; // 已有补间循环在跑
+    const step = () => {
+      const d = displayRef.current;
+      // 切换动画进行中锁定到 newLeft；否则跟随真实剩余 left
+      const target = animTargetRef.current !== null ? animTargetRef.current : targetRef.current;
+      const diff = target - d;
+      if (Math.abs(diff) < 0.5) {
+        displayRef.current = target;
+        setDisplayLeft(target);
+        if (animTargetRef.current !== null) animTargetRef.current = null; // 切换动画结束，恢复跟随倒计时
+        rafRef.current = 0;
+        return;
+      }
+      const delta = Math.max(1, Math.ceil(Math.abs(diff) / 12));
+      const next = d + Math.sign(diff) * delta;
+      displayRef.current = next;
+      setDisplayLeft(next);
+      rafRef.current = requestAnimationFrame(step);
+    };
+    rafRef.current = requestAnimationFrame(step);
+  }, [left]);
 
   // 全屏：跟随浏览器 Fullscreen API，状态监听 fullscreenchange
   const [isFs, setIsFs] = useState(false);
@@ -521,6 +552,8 @@ export function PromptStage() {
     setPhase("research");
     setRunning(true);
     setLeft(researchDuration);
+    setDisplayLeft(researchDuration); // 开始即同步显示，避免从旧值滚动
+    animTargetRef.current = null;
     timerRef.current = setInterval(() => {
       setLeft((l) => {
         if (l <= 1) {
@@ -542,6 +575,8 @@ export function PromptStage() {
     setPhase("speak");
     setRunning(true);
     setLeft(speakDuration);
+    setDisplayLeft(speakDuration); // 开始即同步显示，避免从旧值滚动
+    animTargetRef.current = null;
     timerRef.current = setInterval(() => {
       setLeft((l) => {
         if (l <= 1) {
@@ -599,6 +634,7 @@ export function PromptStage() {
         setLeft(speakDuration);
       } else {
         setLeft(newLeft);
+        animTargetRef.current = newLeft; // 锁定动画目标，避免被每秒倒计时侵蚀
       }
     } else {
       // 未开始 / 已结束：只记录档位，下次开始查资料时按新总时长生效
@@ -607,11 +643,27 @@ export function PromptStage() {
   }
 
   function changeSpeak(v: number) {
-    setSpeakDuration(v);
+    if (phase === "speak") {
+      // 表达进行中：切换的是「总时长」，剩余时间按差值动态增减
+      const newLeft = left + (v - speakDuration);
+      setSpeakDuration(v);
+      if (newLeft <= 0) {
+        // 缩短后剩余耗尽：直接结束表达，记为「已表达」
+        clearTimers();
+        setRunning(false);
+        if (!muted) playSpeakEnd();
+        markExpressedOnly();
+      } else {
+        setLeft(newLeft);
+        animTargetRef.current = newLeft; // 锁定动画目标，避免被每秒倒计时侵蚀
+      }
+    } else {
+      setSpeakDuration(v);
+    }
   }
 
-  const researchShown = phase === "research" ? left : researchDuration;
-  const speakShown = phase === "speak" ? left : speakDuration;
+  const researchShown = phase === "research" ? displayLeft : researchDuration;
+  const speakShown = phase === "speak" ? displayLeft : speakDuration;
 
   // 抽题范围标签（cat 可能是内置 key / all / mine / cat:名称）
   const catLabel = (c: string): string =>
@@ -818,7 +870,7 @@ export function PromptStage() {
                   : "text-zinc-900 dark:text-zinc-50")
               }
             >
-              {fmt(researchShown)}
+              {fmt(Math.round(researchShown))}
             </div>
           </div>
           {/* 右：表达时间 */}
@@ -841,7 +893,7 @@ export function PromptStage() {
                   : "text-zinc-900 dark:text-zinc-50")
               }
             >
-              {fmt(speakShown)}
+              {fmt(Math.round(speakShown))}
             </div>
           </div>
         </div>
@@ -882,6 +934,11 @@ export function PromptStage() {
               <button
                 key={d.value}
                 onClick={() => changeSpeak(d.value)}
+                title={
+                  phase === "speak"
+                    ? "切换总时长：剩余时间按差值增减，减到 0 立即结束表达"
+                    : undefined
+                }
                 className={
                   "rounded-full px-3 py-1 text-xs font-medium transition-colors " +
                   (d.value === speakDuration
