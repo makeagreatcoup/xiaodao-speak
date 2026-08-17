@@ -742,11 +742,8 @@ export function PromptStage() {
             transformOrigin: "center center",
           }}
         >
-      {/* 头部：出版感报头 —— 眉标 + 衬线大标题 + 发丝规 */}
+      {/* 头部：标题 + 一句说明 */}
       <header className="mb-6 text-center">
-        <p className="mb-3 text-xs font-medium tracking-[0.4em] text-[#7a7060] dark:text-[#a89c88]">
-          每 日 一 题
-        </p>
         <h1 className="font-serif text-4xl font-bold tracking-tight text-[#23201a] dark:text-[#ece3d4]">
           小导片场
           <span className="ml-2 align-middle text-lg font-semibold text-accent">
