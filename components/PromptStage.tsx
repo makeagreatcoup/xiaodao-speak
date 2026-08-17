@@ -691,7 +691,7 @@ export function PromptStage() {
     <section
       id="stage"
       ref={sectionRef}
-      className="relative mx-auto flex h-[100dvh] w-full max-w-2xl flex-col items-center overflow-hidden bg-zinc-200 px-4 sm:px-6 dark:bg-zinc-900"
+      className="relative mx-auto flex h-[100dvh] w-full max-w-3xl flex-col items-center overflow-hidden bg-zinc-100 px-4 sm:px-6 dark:bg-zinc-950"
     >
       {/* 右上角：设置入口（已表达可在设置里查看，主屏不挂徽标） */}
       <div className="fixed right-4 top-4 z-40 flex items-center gap-2">
@@ -742,21 +742,22 @@ export function PromptStage() {
             transformOrigin: "center center",
           }}
         >
-      {/* 头部：站点名 + 一句话说明 */}
-      <header className="mb-4 text-center">
-        <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+      {/* 头部：站点名 + 一句话说明（出版感：大标题 + 短发丝规） */}
+      <header className="mb-6 text-center">
+        <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
           小导片场
-          <span className="ml-2 align-middle text-sm font-semibold text-accent">
+          <span className="ml-2 align-middle text-base font-semibold text-accent">
             先查后讲
           </span>
         </h1>
-        <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+        <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
           抽个词，先查资料，再开口，练即兴表达
         </p>
+        <div className="mx-auto mt-4 h-px w-12 bg-zinc-300 dark:bg-zinc-700" />
       </header>
 
       {/* 命题分类：随机全场 + 内置 4 领域 + 我的命题 */}
-      <div className="mb-5 flex flex-wrap justify-center gap-2">
+      <div className="mb-6 flex flex-wrap justify-center gap-2">
         {categories.map((c) => {
           const active = c.key === cat;
           const isAll = c.key === "all";
@@ -813,7 +814,7 @@ export function PromptStage() {
 
       {/* 命题卡：大词轮盘（老虎机），居中核心 */}
       <div className="relative w-full">
-        <div className="rounded-3xl border border-zinc-200 bg-white p-6 text-center shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:p-8">
+        <div className="rounded-2xl border border-zinc-200/70 bg-white/70 p-8 text-center dark:border-zinc-800/70 dark:bg-zinc-900/50 sm:p-10">
           <div className="reel-window mx-auto" aria-live="polite">
             {spinning ? (
               <div key="reel-col" ref={reelRef} className="reel-col">
@@ -845,7 +846,7 @@ export function PromptStage() {
       </div>
 
       {/* 计时：左右两个大号时间 —— 查资料动左、表达动右，无进度条 */}
-      <div className="mt-5 w-full max-w-lg">
+      <div className="mt-8 w-full max-w-lg">
         <div className="flex items-stretch justify-center gap-3">
           {/* 左：查资料时间 */}
           <div
@@ -853,7 +854,7 @@ export function PromptStage() {
               "flex-1 rounded-2xl border px-3 py-3 text-center transition-colors " +
               (phase === "research"
                 ? "border-accent bg-accent/5"
-                : "border-zinc-200 dark:border-zinc-800")
+                : "border-zinc-200/70 dark:border-zinc-800/70")
             }
           >
             <div className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
@@ -876,7 +877,7 @@ export function PromptStage() {
               "flex-1 rounded-2xl border px-3 py-3 text-center transition-colors " +
               (phase === "speak"
                 ? "border-accent bg-accent/5"
-                : "border-zinc-200 dark:border-zinc-800")
+                : "border-zinc-200/70 dark:border-zinc-800/70")
             }
           >
             <div className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
@@ -897,8 +898,8 @@ export function PromptStage() {
       </div>
 
       {/* 时间选择：放在两个时间底下，查资料 / 表达 两组小按钮 */}
-      <div className="mt-3 w-full max-w-lg">
-        <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 rounded-2xl border border-zinc-200 bg-zinc-50/60 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-900/40">
+      <div className="mt-4 w-full max-w-lg">
+        <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 rounded-2xl border border-zinc-200/70 bg-white/50 px-4 py-3 dark:border-zinc-800/70 dark:bg-zinc-900/40">
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
               查资料
@@ -951,7 +952,7 @@ export function PromptStage() {
       </div>
 
       {/* 主控制按钮 */}
-      <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+      <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
         {phase === "idle" && (
           <button
             onClick={startResearch}
@@ -1025,7 +1026,7 @@ export function PromptStage() {
               setSettingsTab("expressed");
               setSettingsOpen(true);
             }}
-            className="inline-flex items-center gap-2 rounded-full bg-emerald-500/10 px-5 py-3 text-sm font-semibold text-emerald-600 transition-colors hover:bg-emerald-500/20 dark:text-emerald-400"
+            className="inline-flex items-center gap-2 rounded-full bg-accent/10 px-5 py-3 text-sm font-semibold text-accent transition-colors hover:bg-accent/20"
           >
             <CheckIcon className="h-4 w-4" />
             已记为「已表达」：{prompt?.term}（累计 {expressedRecords.length} 条 · 点此查看）

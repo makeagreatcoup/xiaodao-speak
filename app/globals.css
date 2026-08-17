@@ -20,13 +20,13 @@ body {
     "Microsoft YaHei", sans-serif;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-  /* 兜底底色：避免移动端下拉回弹露出纯白（拍照过曝） */
-  background-color: #e4e4e7;
+  /* 兜底底色：安静中性灰，非纯白（避免拍照过曝），出版感 */
+  background-color: #f4f4f5;
 }
 
 @media (prefers-color-scheme: dark) {
   body {
-    background-color: #18181b;
+    background-color: #09090b;
   }
 }
 
@@ -46,10 +46,10 @@ body {
   justify-content: center;
   text-align: center;
   padding: 0 0.75rem;
-  font-size: clamp(2rem, 5.5vw, 3.75rem);
+  font-size: clamp(2.5rem, 6.5vw, 4.5rem);
   font-weight: 700;
-  letter-spacing: -0.01em;
-  line-height: 1.12;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
   color: #18181b;
 }
 /* 定格词：与滚动窗同高同字号，居中显示，长词可自动折两行 */
@@ -60,12 +60,12 @@ body {
   justify-content: center;
   text-align: center;
   padding: 0 0.75rem;
-  font-size: clamp(2rem, 5.5vw, 3.75rem);
+  font-size: clamp(2.5rem, 6.5vw, 4.5rem);
   font-weight: 700;
-  letter-spacing: -0.01em;
-  line-height: 1.12;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
   color: var(--color-accent);
-  /* 锁定：中性色 → 主题红 + 辉光，轻微过冲回弹并放大强调 */
+  /* 锁定：中性色 → 主题红，轻微过冲回弹并放大强调（克制辉光，出版感） */
   animation: lockIn 0.6s cubic-bezier(0.34, 1.4, 0.5, 1) both;
 }
 @keyframes lockIn {
@@ -79,7 +79,7 @@ body {
   }
   100% {
     color: var(--color-accent);
-    text-shadow: 0 0 24px rgba(255, 75, 51, 0.5);
+    text-shadow: 0 0 12px rgba(255, 75, 51, 0.22);
     transform: scale(1.08);
   }
 }
@@ -100,7 +100,7 @@ body {
   }
   100% {
     color: var(--color-accent);
-    text-shadow: 0 0 28px rgba(255, 75, 51, 0.65);
+    text-shadow: 0 0 14px rgba(255, 75, 51, 0.3);
     transform: scale(1.08);
   }
 }
