@@ -13,6 +13,106 @@
   color-scheme: light dark;
 }
 
+/* ============ 主题变量 ============ */
+/* 未设置 data-theme 时默认 = 莫兰迪 */
+:root,
+[data-theme="morandi"] {
+  --c-bg: #e4e5e1;
+  --c-card: #efefea;
+  --c-text: #3b3d39;
+  --c-sub: #878a82;
+  --c-border: #d2d3cc;
+  --c-hover: #e3e3dc;
+  --c-hairline: #c8c9c0;
+}
+[data-theme="warm"] {
+  --c-bg: #f6f1e8;
+  --c-card: #fffdf8;
+  --c-text: #23201a;
+  --c-sub: #7a7060;
+  --c-border: #e6dcc6;
+  --c-hover: #ece3d2;
+  --c-hairline: #e3d8c2;
+}
+[data-theme="news"] {
+  --c-bg: #ffffff;
+  --c-card: #ffffff;
+  --c-text: #111111;
+  --c-sub: #555555;
+  --c-border: #111111;
+  --c-hover: #eeeeee;
+  --c-hairline: #111111;
+}
+[data-theme="gallery"] {
+  --c-bg: #f5f6f8;
+  --c-card: #ffffff;
+  --c-text: #1a1c20;
+  --c-sub: #6b7280;
+  --c-border: #e2e5ea;
+  --c-hover: #eef0f3;
+  --c-hairline: #cdd2da;
+}
+/* 墨夜：恒深色，浅层变量直接设深，media 下再确认一次 */
+[data-theme="noir"] {
+  color-scheme: dark;
+  --c-bg: #121614;
+  --c-card: #1b1f1c;
+  --c-text: #ece5d8;
+  --c-sub: #a39e92;
+  --c-border: #2c302c;
+  --c-hover: #20241f;
+  --c-hairline: #3a3f39;
+}
+
+/* 深色（跟随系统） —— 墨夜主题恒深，已在上面给出 */
+@media (prefers-color-scheme: dark) {
+  [data-theme="morandi"] {
+    --c-bg: #1e201d;
+    --c-card: #262824;
+    --c-text: #e7e8e1;
+    --c-sub: #a3a59c;
+    --c-border: #33352f;
+    --c-hover: #2a2c27;
+    --c-hairline: #3a3c33;
+  }
+  [data-theme="warm"] {
+    --c-bg: #161310;
+    --c-card: #1b1713;
+    --c-text: #ece3d4;
+    --c-sub: #a89c88;
+    --c-border: #2a241c;
+    --c-hover: #221d18;
+    --c-hairline: #2e271f;
+  }
+  [data-theme="news"] {
+    --c-bg: #0a0a0a;
+    --c-card: #141414;
+    --c-text: #f5f5f5;
+    --c-sub: #a0a0a0;
+    --c-border: #333333;
+    --c-hover: #1c1c1c;
+    --c-hairline: #333333;
+  }
+  [data-theme="gallery"] {
+    --c-bg: #121417;
+    --c-card: #1b1e23;
+    --c-text: #e8eaed;
+    --c-sub: #9aa0a8;
+    --c-border: #2a2e34;
+    --c-hover: #23272d;
+    --c-hairline: #2e333a;
+  }
+  [data-theme="noir"] {
+    --c-bg: #121614;
+    --c-card: #1b1f1c;
+    --c-text: #ece5d8;
+    --c-sub: #a39e92;
+    --c-border: #2c302c;
+    --c-hover: #20241f;
+    --c-hairline: #3a3f39;
+  }
+}
+
 html {
   scroll-behavior: smooth;
 }
@@ -22,15 +122,8 @@ body {
     "Microsoft YaHei", sans-serif;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-  /* 兜底底色：暖纸出版感（米白纸张，非纯白避免拍照过曝） */
-  background-color: #e4e5e1;
-}
-
-@media (prefers-color-scheme: dark) {
-  body {
-    /* 暗色：暖墨底（非冷蓝黑），跟随系统 */
-    background-color: #1e201d;
-  }
+  background-color: var(--c-bg);
+  color: var(--c-text);
 }
 
 /* 抽题轮盘（老虎机式滚动，无模糊 / 无回弹放大） */
@@ -54,7 +147,7 @@ body {
   font-weight: 600;
   letter-spacing: 0.01em;
   line-height: 1.1;
-  color: #3b3d39;
+  color: var(--c-text);
 }
 /* 定格词：衬线大词，墨色 → 主题红，克制辉光 */
 .reel-word {
@@ -74,7 +167,7 @@ body {
 }
 @keyframes lockIn {
   0% {
-    color: #3b3d39;
+    color: var(--c-text);
     text-shadow: 0 0 0 rgba(255, 75, 51, 0);
     transform: scale(1);
   }
@@ -87,15 +180,20 @@ body {
     transform: scale(1.08);
   }
 }
-.dark .reel-row {
-  color: #e7e8e1;
-}
-.dark .reel-word {
-  animation-name: lockInDark;
+@media (prefers-color-scheme: dark) {
+  .reel-row {
+    color: var(--c-text-dark);
+  }
+  .reel-word {
+    animation-name: lockInDark;
+  }
+  .reel-word--empty {
+    color: var(--c-sub-dark);
+  }
 }
 @keyframes lockInDark {
   0% {
-    color: #e7e8e1;
+    color: var(--c-text-dark);
     text-shadow: 0 0 0 rgba(255, 75, 51, 0);
     transform: scale(1);
   }
@@ -109,11 +207,8 @@ body {
   }
 }
 .reel-word--empty {
-  color: #878a82;
+  color: var(--c-sub);
   animation: none;
-}
-.dark .reel-word--empty {
-  color: #7c7e76;
 }
 
 /* Respect reduced motion at the CSS level too */
