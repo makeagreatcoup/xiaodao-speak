@@ -691,7 +691,7 @@ export function PromptStage() {
     <section
       id="stage"
       ref={sectionRef}
-      className="relative mx-auto flex h-[100dvh] w-full max-w-3xl flex-col items-center overflow-hidden bg-zinc-100 px-4 sm:px-6 dark:bg-zinc-950"
+      className="relative mx-auto flex h-[100dvh] w-full max-w-3xl flex-col items-center overflow-hidden bg-[#f6f1e8] px-4 sm:px-6 dark:bg-[#161310]"
     >
       {/* 右上角：设置入口（已表达可在设置里查看，主屏不挂徽标） */}
       <div className="fixed right-4 top-4 z-40 flex items-center gap-2">
@@ -699,7 +699,7 @@ export function PromptStage() {
           onClick={() => setMuted((m) => !m)}
           aria-label={muted ? "开启声音" : "关闭声音"}
           title={muted ? "开启声音" : "关闭声音"}
-          className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white/80 px-3 py-2 text-sm font-medium text-zinc-600 shadow-sm backdrop-blur transition-colors hover:text-accent dark:border-zinc-800 dark:bg-zinc-900/80 dark:text-zinc-300"
+          className="inline-flex items-center gap-1.5 rounded-full border border-[#e6dcc6]/70 bg-[#fffdf8]/80 px-3 py-2 text-sm font-medium text-[#5c5346] shadow-sm backdrop-blur transition-colors hover:text-accent dark:border-[#ffffff]/10 dark:bg-[#ffffff]/5 dark:text-[#cfc4b0]"
         >
           {muted ? (
             <SpeakerOffIcon className="h-4 w-4" />
@@ -712,7 +712,7 @@ export function PromptStage() {
           onClick={() => setSettingsOpen(true)}
           aria-label="设置"
           title="设置"
-          className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white/80 px-3 py-2 text-sm font-medium text-zinc-600 shadow-sm backdrop-blur transition-colors hover:text-accent dark:border-zinc-800 dark:bg-zinc-900/80 dark:text-zinc-300"
+          className="inline-flex items-center gap-1.5 rounded-full border border-[#e6dcc6]/70 bg-[#fffdf8]/80 px-3 py-2 text-sm font-medium text-[#5c5346] shadow-sm backdrop-blur transition-colors hover:text-accent dark:border-[#ffffff]/10 dark:bg-[#ffffff]/5 dark:text-[#cfc4b0]"
         >
           <GearIcon className="h-4 w-4" />
           设置
@@ -721,7 +721,7 @@ export function PromptStage() {
           onClick={toggleFs}
           aria-label={isFs ? "退出全屏" : "进入全屏"}
           title={isFs ? "退出全屏" : "进入全屏"}
-          className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white/80 px-3 py-2 text-sm font-medium text-zinc-600 shadow-sm backdrop-blur transition-colors hover:text-accent dark:border-zinc-800 dark:bg-zinc-900/80 dark:text-zinc-300"
+          className="inline-flex items-center gap-1.5 rounded-full border border-[#e6dcc6]/70 bg-[#fffdf8]/80 px-3 py-2 text-sm font-medium text-[#5c5346] shadow-sm backdrop-blur transition-colors hover:text-accent dark:border-[#ffffff]/10 dark:bg-[#ffffff]/5 dark:text-[#cfc4b0]"
         >
           {isFs ? (
             <ExitFullScreenIcon className="h-4 w-4" />
@@ -742,18 +742,21 @@ export function PromptStage() {
             transformOrigin: "center center",
           }}
         >
-      {/* 头部：站点名 + 一句话说明（出版感：大标题 + 短发丝规） */}
+      {/* 头部：出版感报头 —— 眉标 + 衬线大标题 + 发丝规 */}
       <header className="mb-6 text-center">
-        <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+        <p className="mb-3 text-xs font-medium tracking-[0.4em] text-[#7a7060] dark:text-[#a89c88]">
+          每 日 一 题
+        </p>
+        <h1 className="font-serif text-4xl font-bold tracking-tight text-[#23201a] dark:text-[#ece3d4]">
           小导片场
-          <span className="ml-2 align-middle text-base font-semibold text-accent">
+          <span className="ml-2 align-middle text-lg font-semibold text-accent">
             先查后讲
           </span>
         </h1>
-        <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
+        <p className="mt-2 text-sm text-[#7a7060] dark:text-[#a89c88]">
           抽个词，先查资料，再开口，练即兴表达
         </p>
-        <div className="mx-auto mt-4 h-px w-12 bg-zinc-300 dark:bg-zinc-700" />
+        <div className="mx-auto mt-4 h-px w-12 bg-[#e3d8c2] dark:bg-[#ffffff]/10" />
       </header>
 
       {/* 命题分类：随机全场 + 内置 4 领域 + 我的命题 */}
@@ -770,8 +773,8 @@ export function PromptStage() {
                 (active
                   ? "bg-accent text-accent-fg"
                   : isAll
-                    ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900"
-                    : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800")
+                    ? "bg-[#23201a] text-white dark:bg-[#ece3d4] dark:text-[#161310]"
+                    : "bg-[#ece3d2] text-[#5c5346] hover:bg-[#e2d6bf] dark:bg-[#ffffff]/5 dark:text-[#a89c88] dark:hover:bg-[#ffffff]/10")
               }
             >
               {c.name}
@@ -789,7 +792,7 @@ export function PromptStage() {
                   "rounded-full px-4 py-1.5 text-sm font-medium transition-colors " +
                   (active
                     ? "bg-accent text-accent-fg"
-                    : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800")
+                    : "bg-[#ece3d2] text-[#5c5346] hover:bg-[#e2d6bf] dark:bg-[#ffffff]/5 dark:text-[#a89c88] dark:hover:bg-[#ffffff]/10")
                 }
               >
                 {name}
@@ -814,7 +817,7 @@ export function PromptStage() {
 
       {/* 命题卡：大词轮盘（老虎机），居中核心 */}
       <div className="relative w-full">
-        <div className="rounded-2xl border border-zinc-200/70 bg-white/70 p-8 text-center dark:border-zinc-800/70 dark:bg-zinc-900/50 sm:p-10">
+        <div className="rounded-2xl border border-[#e6dcc6]/70 bg-[#fffdf8]/70 p-8 text-center dark:border-[#ffffff]/10 dark:bg-[#ffffff]/5 sm:p-10">
           <div className="reel-window mx-auto" aria-live="polite">
             {spinning ? (
               <div key="reel-col" ref={reelRef} className="reel-col">
@@ -836,7 +839,7 @@ export function PromptStage() {
           </div>
 
           {/* 类型说明小字：居中且固定——值放进预留宽度的 span，滚动→定格时本词类别值出现也不横移 */}
-          <p className="mt-3 text-center text-xs tracking-wide text-zinc-400 dark:text-zinc-500">
+          <p className="mt-3 text-center text-xs tracking-wide text-[#7a7060] dark:text-[#a89c88]">
             {capPrefix}
             {(spinning || prompt) && (
               <span className="inline-block min-w-[4em] text-left">{capValue}</span>
@@ -854,10 +857,10 @@ export function PromptStage() {
               "flex-1 rounded-2xl border px-3 py-3 text-center transition-colors " +
               (phase === "research"
                 ? "border-accent bg-accent/5"
-                : "border-zinc-200/70 dark:border-zinc-800/70")
+                : "border-[#e6dcc6]/70 dark:border-[#ffffff]/10")
             }
           >
-            <div className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
+            <div className="text-xs font-semibold text-[#7a7060] dark:text-[#a89c88]">
               查资料
             </div>
             <div
@@ -865,7 +868,7 @@ export function PromptStage() {
                 "font-mono text-5xl font-bold tabular-nums tracking-tight sm:text-6xl " +
                 (phase === "research"
                   ? "text-accent"
-                  : "text-zinc-900 dark:text-zinc-50")
+                  : "text-[#23201a] dark:text-[#ece3d4]")
               }
             >
               {fmt(Math.round(researchShown))}
@@ -877,10 +880,10 @@ export function PromptStage() {
               "flex-1 rounded-2xl border px-3 py-3 text-center transition-colors " +
               (phase === "speak"
                 ? "border-accent bg-accent/5"
-                : "border-zinc-200/70 dark:border-zinc-800/70")
+                : "border-[#e6dcc6]/70 dark:border-[#ffffff]/10")
             }
           >
-            <div className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
+            <div className="text-xs font-semibold text-[#7a7060] dark:text-[#a89c88]">
               表达
             </div>
             <div
@@ -899,7 +902,7 @@ export function PromptStage() {
 
       {/* 时间选择：放在两个时间底下，查资料 / 表达 两组小按钮 */}
       <div className="mt-4 w-full max-w-lg">
-        <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 rounded-2xl border border-zinc-200/70 bg-white/50 px-4 py-3 dark:border-zinc-800/70 dark:bg-zinc-900/40">
+        <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 rounded-2xl border border-[#e6dcc6]/70 bg-[#fffdf8]/50 px-4 py-3 dark:border-[#ffffff]/10 dark:bg-[#ffffff]/5">
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
               查资料
@@ -917,7 +920,7 @@ export function PromptStage() {
                   "rounded-full px-3 py-1 text-xs font-medium transition-colors " +
                   (d.value === researchDuration
                     ? "bg-accent text-accent-fg"
-                    : "text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900")
+                    : "text-[#7a7060] hover:bg-[#ece3d2] dark:text-[#a89c88] dark:hover:bg-[#ffffff]/10")
                 }
               >
                 {d.label}
@@ -941,7 +944,7 @@ export function PromptStage() {
                   "rounded-full px-3 py-1 text-xs font-medium transition-colors " +
                   (d.value === speakDuration
                     ? "bg-accent text-accent-fg"
-                    : "text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900")
+                    : "text-[#7a7060] hover:bg-[#ece3d2] dark:text-[#a89c88] dark:hover:bg-[#ffffff]/10")
                 }
               >
                 {d.label}
@@ -968,7 +971,7 @@ export function PromptStage() {
           <>
             <button
               onClick={toggleRunning}
-              className="inline-flex items-center gap-2 rounded-full border border-zinc-300 px-5 py-3 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-900"
+              className="inline-flex items-center gap-2 rounded-full border border-[#e6dcc6] px-5 py-3 text-sm font-medium text-[#5c5346] transition-colors hover:bg-[#ece3d2] dark:border-[#ffffff]/10 dark:text-[#cfc4b0] dark:hover:bg-[#ffffff]/5"
             >
               <StopIcon className="h-4 w-4" />
               {running ? "暂停" : "继续"}
@@ -1063,19 +1066,19 @@ export function PromptStage() {
             onClick={() => setSettingsOpen(false)}
             aria-hidden
           />
-          <div className="relative flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-xl dark:border-zinc-800 dark:bg-zinc-900">
+          <div className="relative flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-[#e6dcc6] bg-[#fffdf8] shadow-xl dark:border-[#ffffff]/10 dark:bg-[#1b1713]">
             {/* 头部 + 标签切换 */}
-            <div className="flex items-center justify-between border-b border-zinc-200 px-5 py-3 dark:border-zinc-800">
+            <div className="flex items-center justify-between border-b border-[#e6dcc6] px-5 py-3 dark:border-[#ffffff]/10">
               <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">设置</h3>
               <button
                 onClick={() => setSettingsOpen(false)}
-                className="rounded-full p-1 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800"
+                className="rounded-full p-1 text-[#7a7060] transition-colors hover:bg-[#ece3d2] hover:text-[#23201a] dark:hover:bg-[#ffffff]/5"
                 aria-label="关闭"
               >
                 <span className="block h-5 w-5 text-center text-lg leading-5">×</span>
               </button>
             </div>
-            <div className="flex gap-1 border-b border-zinc-200 px-3 dark:border-zinc-800">
+            <div className="flex gap-1 border-b border-[#e6dcc6] px-3 dark:border-[#ffffff]/10">
               {([
                 { k: "bank", label: "话题库" },
                 { k: "expressed", label: "已表达" },
@@ -1088,7 +1091,7 @@ export function PromptStage() {
                     "relative px-3 py-2.5 text-sm font-medium transition-colors " +
                     (settingsTab === t.k
                       ? "text-accent"
-                      : "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200")
+                      : "text-[#7a7060] hover:text-[#23201a] dark:text-[#a89c88] dark:hover:text-[#ece3d4]")
                   }
                 >
                   {t.label}
@@ -1331,7 +1334,7 @@ export function PromptStage() {
               </div>
               <button
                 onClick={() => setImportOpen(false)}
-                className="rounded-full p-1 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800"
+                className="rounded-full p-1 text-[#7a7060] transition-colors hover:bg-[#ece3d2] hover:text-[#23201a] dark:hover:bg-[#ffffff]/5"
                 aria-label="关闭"
               >
                 <span className="block h-5 w-5 text-center text-lg leading-5">×</span>
@@ -1354,7 +1357,7 @@ export function PromptStage() {
                         "rounded-full px-3 py-1 text-xs font-medium transition-colors " +
                         (active
                           ? "bg-accent text-accent-fg"
-                          : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800")
+                          : "bg-[#ece3d2] text-[#5c5346] hover:bg-[#e2d6bf] dark:bg-[#ffffff]/5 dark:text-[#a89c88] dark:hover:bg-[#ffffff]/10")
                       }
                     >
                       {o.name}
