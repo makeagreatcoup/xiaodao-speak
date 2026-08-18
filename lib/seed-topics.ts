@@ -62,7 +62,6 @@ export const seedTopics: Prompt[] = [
   { id: "seed::psychology::17", term: "计划谬误", category: "psychology" },
   { id: "seed::psychology::21", term: "基本归因错误", category: "psychology" },
   { id: "seed::psychology::22", term: "旁观者效应", category: "psychology" },
-  { id: "seed::psychology::23", term: "刻板印象", category: "psychology" },
   { id: "seed::psychology::24", term: "安慰剂效应", category: "psychology" },
   { id: "seed::psychology::25", term: "巴纳姆效应", category: "psychology" },
   { id: "seed::psychology::26", term: "认知失调", category: "psychology" },
