@@ -1075,7 +1075,7 @@ export function PromptStage() {
         {(phase === "research" || phase === "ready" || phase === "speak") && (
           <button
             onClick={spin}
-            className="inline-flex items-center gap-2 rounded-full border border-zinc-300 px-5 py-3 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-900"
+            className="inline-flex items-center gap-2 rounded-full border border-[var(--c-border)] px-5 py-3 text-sm font-medium text-[var(--c-text)] transition-colors hover:bg-[var(--c-hover)]"
           >
             <ReloadIcon className="h-4 w-4" />
             换命题
@@ -1084,7 +1084,7 @@ export function PromptStage() {
         {(phase === "idle" || phase === "done") && (
           <button
             onClick={spin}
-            className="inline-flex items-center gap-2 rounded-full border border-zinc-300 px-5 py-3 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-900"
+            className="inline-flex items-center gap-2 rounded-full border border-[var(--c-border)] px-5 py-3 text-sm font-medium text-[var(--c-text)] transition-colors hover:bg-[var(--c-hover)]"
           >
             <ReloadIcon className="h-4 w-4" />
             抽命题
