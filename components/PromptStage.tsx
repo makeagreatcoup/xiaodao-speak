@@ -926,7 +926,7 @@ export function PromptStage() {
                 "font-mono text-5xl font-bold tabular-nums tracking-tight sm:text-6xl " +
                 (phase === "speak"
                   ? "text-accent"
-                  : "text-zinc-900 dark:text-zinc-50")
+                  : "text-[var(--c-text)] dark:text-[var(--c-text-dark)]")
               }
             >
               {fmt(Math.round(speakShown))}
