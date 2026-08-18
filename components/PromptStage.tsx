@@ -186,6 +186,7 @@ export function PromptStage() {
       { key: "news", name: "报章", swatch: "#ffffff" },
       { key: "gallery", name: "画廊", swatch: "#f5f6f8" },
       { key: "noir", name: "墨夜", swatch: "#121614" },
+      { key: "nightgold", name: "夜金", swatch: "#c8a24c" },
     ],
     [],
   );
