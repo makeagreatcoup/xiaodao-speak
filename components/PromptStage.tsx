@@ -177,6 +177,8 @@ export function PromptStage() {
   const [settingsTab, setSettingsTab] = useState<"bank" | "expressed" | "import" | "theme">("bank");
   const [bankSearch, setBankSearch] = useState("");
   const [bankExpanded, setBankExpanded] = useState<Set<string>>(new Set());
+  // 钉住：从「话题库」选一个词固定，换命题时永远只出它
+  const [pinnedId, setPinnedId] = useState<string | null>(null);
 
   // 主题：跟随 localStorage 持久化，刷新后保持
   const THEMES = useMemo(
@@ -458,8 +460,19 @@ export function PromptStage() {
     }
   }
 
+  // 钉住的词（如已被删/找不到则返回 null）
+  function resolvePinned(): Prompt | null {
+    if (!pinnedId) return null;
+    return allPrompts.find((p) => p.id === pinnedId) ?? null;
+  }
+
   // 纯随机：从当前词池里随机抽一个。重复由「记已表达」踢出词来控制（已表达的不再进池）。
   function drawFromPool(pool: Prompt[]) {
+    const pinned = resolvePinned();
+    if (pinned) {
+      setPrompt(pinned);
+      return;
+    }
     if (pool.length === 0) {
       setPrompt(null);
       return;
@@ -473,6 +486,15 @@ export function PromptStage() {
     setPhase("idle");
     setRunning(false);
     setLeft(speakDuration);
+    // 钉住模式：换命题永远只出那个词
+    const pinned = resolvePinned();
+    if (pinned) {
+      chosenRef.current = pinned;
+      setReelWords(buildReel([pinned], pinned));
+      setSpinning(true);
+      setEmptyReason("none");
+      return;
+    }
     const pool = buildPool(cat, customTerms, includeExpressed, expressed, expressedTerms);
     if (pool.length === 0) {
       setEmptyReason(cat === "mine" || cat.startsWith("cat:") ? "no-custom" : "all-done");
@@ -493,6 +515,20 @@ export function PromptStage() {
 
   function switchCat(next: string) {
     if (next === cat) return;
+    // 钉住模式：切分类也始终固定在那个词
+    const pinned = resolvePinned();
+    if (pinned) {
+      primeAudio();
+      clearTimers();
+      setCat(next);
+      setPhase("idle");
+      setRunning(false);
+      setLeft(speakDuration);
+      setPrompt(pinned);
+      setEmptyReason("none");
+      if (!muted) playSpinEnd();
+      return;
+    }
     primeAudio(); // 解锁音频（切分类也会立刻抽到词、落定发声）
     clearTimers();
     setCat(next);
@@ -1072,6 +1108,21 @@ export function PromptStage() {
           </button>
         )}
 
+        {pinnedId && (() => {
+          const pinP = allPrompts.find((x) => x.id === pinnedId);
+          return pinP ? (
+            <div className="mb-1 flex items-center justify-center gap-2 text-xs text-accent">
+              <span>已固定：{pinP.term}（换命题只出它）</span>
+              <button
+                onClick={() => setPinnedId(null)}
+                className="rounded-full border border-accent/40 px-2 py-0.5 text-accent transition-colors hover:bg-accent/10"
+              >
+                取消固定
+              </button>
+            </div>
+          ) : null;
+        })()}
+
         {(phase === "research" || phase === "ready" || phase === "speak") && (
           <button
             onClick={spin}
@@ -1169,6 +1220,7 @@ export function PromptStage() {
                           )}
                           {hits.map((p) => {
                             const done = expressed.has(p.id) || expressedTerms.has(p.term);
+                            const isPinned = pinnedId === p.id;
                             return (
                               <div
                                 key={p.id}
@@ -1184,6 +1236,17 @@ export function PromptStage() {
                                   {p.term}
                                 </span>
                                 <span className="flex shrink-0 items-center gap-1.5">
+                                  <button
+                                    onClick={() => setPinnedId(isPinned ? null : p.id)}
+                                    className={
+                                      "rounded-full px-2.5 py-1 text-xs font-medium transition-colors " +
+                                      (isPinned
+                                        ? "bg-accent text-accent-fg"
+                                        : "border border-zinc-300 text-zinc-500 hover:border-accent hover:text-accent dark:border-zinc-700 dark:text-zinc-400")
+                                    }
+                                  >
+                                    {isPinned ? "已钉" : "钉住"}
+                                  </button>
                                   {done && (
                                     <span className="rounded-full bg-accent px-2 py-0.5 text-xs font-medium text-accent-fg">
                                       已表达
@@ -1258,19 +1321,24 @@ export function PromptStage() {
                                   ) : (
                                     s.items.map((p) => {
                                       const done = expressed.has(p.id) || expressedTerms.has(p.term);
+                                      const isPinned = pinnedId === p.id;
                                       return (
-                                        <span
+                                        <button
                                           key={p.id}
+                                          onClick={() => setPinnedId(isPinned ? null : p.id)}
+                                          title="固定这个词：换命题时只出它"
                                           className={
-                                            "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs " +
-                                            (done
-                                              ? "border border-accent/40 bg-accent/10 text-accent"
-                                              : "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300")
+                                            "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs transition-colors " +
+                                            (isPinned
+                                              ? "border border-accent bg-accent text-accent-fg"
+                                              : done
+                                                ? "border border-accent/40 bg-accent/10 text-accent"
+                                                : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700")
                                           }
                                         >
-                                          {done && <CheckIcon className="h-3 w-3" />}
                                           {p.term}
-                                        </span>
+                                          {isPinned ? " · 已钉" : ""}
+                                        </button>
                                       );
                                     })
                                   )}
