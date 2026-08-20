@@ -179,6 +179,8 @@ export function PromptStage() {
   const [bankExpanded, setBankExpanded] = useState<Set<string>>(new Set());
   // 钉住：从「话题库」选一个词固定，换命题时永远只出它
   const [pinnedId, setPinnedId] = useState<string | null>(null);
+  // 钉住功能仅本地开发模式（npm run dev）可见，线上生产构建自动隐藏
+  const DEV = process.env.NODE_ENV === "development";
 
   // 主题：跟随 localStorage 持久化，刷新后保持
   const THEMES = useMemo(
@@ -1108,7 +1110,7 @@ export function PromptStage() {
           </button>
         )}
 
-        {pinnedId && (() => {
+        {DEV && pinnedId && (() => {
           const pinP = allPrompts.find((x) => x.id === pinnedId);
           return pinP ? (
             <div className="mb-1 flex items-center justify-center gap-2 text-xs text-accent">
@@ -1236,6 +1238,7 @@ export function PromptStage() {
                                   {p.term}
                                 </span>
                                 <span className="flex shrink-0 items-center gap-1.5">
+                                  {DEV && (
                                   <button
                                     onClick={() => setPinnedId(isPinned ? null : p.id)}
                                     className={
@@ -1247,6 +1250,7 @@ export function PromptStage() {
                                   >
                                     {isPinned ? "已钉" : "钉住"}
                                   </button>
+                                  )}
                                   {done && (
                                     <span className="rounded-full bg-accent px-2 py-0.5 text-xs font-medium text-accent-fg">
                                       已表达
@@ -1323,22 +1327,36 @@ export function PromptStage() {
                                       const done = expressed.has(p.id) || expressedTerms.has(p.term);
                                       const isPinned = pinnedId === p.id;
                                       return (
-                                        <button
-                                          key={p.id}
-                                          onClick={() => setPinnedId(isPinned ? null : p.id)}
-                                          title="固定这个词：换命题时只出它"
-                                          className={
-                                            "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs transition-colors " +
-                                            (isPinned
-                                              ? "border border-accent bg-accent text-accent-fg"
-                                              : done
+                                        DEV ? (
+                                          <button
+                                            key={p.id}
+                                            onClick={() => setPinnedId(isPinned ? null : p.id)}
+                                            title="固定这个词：换命题时只出它"
+                                            className={
+                                              "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs transition-colors " +
+                                              (isPinned
+                                                ? "border border-accent bg-accent text-accent-fg"
+                                                : done
+                                                  ? "border border-accent/40 bg-accent/10 text-accent"
+                                                  : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700")
+                                            }
+                                          >
+                                            {p.term}
+                                            {isPinned ? " · 已钉" : ""}
+                                          </button>
+                                        ) : (
+                                          <span
+                                            key={p.id}
+                                            className={
+                                              "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs " +
+                                              (done
                                                 ? "border border-accent/40 bg-accent/10 text-accent"
-                                                : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700")
-                                          }
-                                        >
-                                          {p.term}
-                                          {isPinned ? " · 已钉" : ""}
-                                        </button>
+                                                : "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300")
+                                            }
+                                          >
+                                            {p.term}
+                                          </span>
+                                        )
                                       );
                                     })
                                   )}
