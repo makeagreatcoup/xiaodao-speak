@@ -182,6 +182,7 @@ export function PromptStage() {
   // 钉住开关：本地开发(npm run dev)恒开；线上默认隐藏，访问 ?pin=1 悄悄打开（记 localStorage 长期有效，?pin=0 关闭）
   const DEV = process.env.NODE_ENV === "development";
   const [pinOn, setPinOn] = useState(false);
+  const [pinToast, setPinToast] = useState<string | null>(null);
   useEffect(() => {
     try {
       const q = new URLSearchParams(window.location.search).get("pin");
@@ -191,6 +192,7 @@ export function PromptStage() {
         // 用完即从地址栏抹掉参数，避免链接带出去
         window.history.replaceState(null, "", window.location.pathname);
         setPinOn(q === "1");
+        setPinToast(q === "1" ? "已开启「钉住」功能：去「话题库」选词固定" : "已关闭「钉住」功能");
         return;
       }
       setPinOn(localStorage.getItem("xd-pin") === "1");
@@ -198,6 +200,11 @@ export function PromptStage() {
       setPinOn(false);
     }
   }, []);
+  useEffect(() => {
+    if (!pinToast) return;
+    const t = setTimeout(() => setPinToast(null), 4000);
+    return () => clearTimeout(t);
+  }, [pinToast]);
   const pinEnabled = DEV || pinOn;
 
   // 主题：跟随 localStorage 持久化，刷新后保持
@@ -788,6 +795,12 @@ export function PromptStage() {
       ref={sectionRef}
       className="relative mx-auto flex h-[100dvh] w-full max-w-3xl flex-col items-center overflow-hidden bg-[var(--c-bg)] px-4 sm:px-6 dark:bg-[var(--c-bg-dark)]"
     >
+      {/* 钉住开关提示条：?pin=1 / ?pin=0 时短暂显示，让开关状态可见 */}
+      {pinToast && (
+        <div className="fixed left-1/2 top-16 z-50 -translate-x-1/2 rounded-full border border-accent/40 bg-[var(--c-card)] px-4 py-2 text-sm text-accent shadow-lg">
+          {pinToast}
+        </div>
+      )}
       {/* 右上角：设置入口（已表达可在设置里查看，主屏不挂徽标） */}
       <div className="float-tools fixed right-4 top-4 z-40 flex items-center gap-2">
         <button
