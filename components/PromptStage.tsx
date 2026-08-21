@@ -179,8 +179,26 @@ export function PromptStage() {
   const [bankExpanded, setBankExpanded] = useState<Set<string>>(new Set());
   // 钉住：从「话题库」选一个词固定，换命题时永远只出它
   const [pinnedId, setPinnedId] = useState<string | null>(null);
-  // 钉住功能仅本地开发模式（npm run dev）可见，线上生产构建自动隐藏
+  // 钉住开关：本地开发(npm run dev)恒开；线上默认隐藏，访问 ?pin=1 悄悄打开（记 localStorage 长期有效，?pin=0 关闭）
   const DEV = process.env.NODE_ENV === "development";
+  const [pinOn, setPinOn] = useState(false);
+  useEffect(() => {
+    try {
+      const q = new URLSearchParams(window.location.search).get("pin");
+      if (q === "1" || q === "0") {
+        if (q === "1") localStorage.setItem("xd-pin", "1");
+        else localStorage.removeItem("xd-pin");
+        // 用完即从地址栏抹掉参数，避免链接带出去
+        window.history.replaceState(null, "", window.location.pathname);
+        setPinOn(q === "1");
+        return;
+      }
+      setPinOn(localStorage.getItem("xd-pin") === "1");
+    } catch {
+      setPinOn(false);
+    }
+  }, []);
+  const pinEnabled = DEV || pinOn;
 
   // 主题：跟随 localStorage 持久化，刷新后保持
   const THEMES = useMemo(
@@ -1110,7 +1128,7 @@ export function PromptStage() {
           </button>
         )}
 
-        {DEV && pinnedId && (() => {
+        {pinEnabled && pinnedId && (() => {
           const pinP = allPrompts.find((x) => x.id === pinnedId);
           return pinP ? (
             <div className="mb-1 flex items-center justify-center gap-2 text-xs text-accent">
@@ -1238,7 +1256,7 @@ export function PromptStage() {
                                   {p.term}
                                 </span>
                                 <span className="flex shrink-0 items-center gap-1.5">
-                                  {DEV && (
+                                  {pinEnabled && (
                                   <button
                                     onClick={() => setPinnedId(isPinned ? null : p.id)}
                                     className={
@@ -1327,7 +1345,7 @@ export function PromptStage() {
                                       const done = expressed.has(p.id) || expressedTerms.has(p.term);
                                       const isPinned = pinnedId === p.id;
                                       return (
-                                        DEV ? (
+                                        pinEnabled ? (
                                           <button
                                             key={p.id}
                                             onClick={() => setPinnedId(isPinned ? null : p.id)}
