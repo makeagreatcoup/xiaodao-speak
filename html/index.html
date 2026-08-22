@@ -238,22 +238,6 @@ header .rule { margin: 1rem auto 0; width: 3rem; height: 1px; background: var(--
 .btn--done:hover:not(:disabled) { background: color-mix(in srgb, var(--accent) 20%, transparent); transform: none; }
 .btn svg { width: 1rem; height: 1rem; }
 
-/* 钉住提示条 */
-#pinBar {
-  margin-top: 0.5rem; display: none;
-  align-items: center; justify-content: center; gap: 0.5rem;
-  font-size: 0.75rem; color: var(--accent);
-}
-#pinBar.show { display: flex; }
-#pinBar button {
-  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
-  background: transparent; color: var(--accent);
-  border-radius: 9999px; padding: 0.125rem 0.5rem;
-  font-size: 0.75rem; cursor: pointer; font-family: inherit;
-  transition: background-color .15s;
-}
-#pinBar button:hover { background: color-mix(in srgb, var(--accent) 10%, transparent); }
-
 /* 右上角浮动工具 */
 .float-tools {
   position: fixed; right: 1rem; top: 1rem; z-index: 40;
@@ -271,18 +255,6 @@ header .rule { margin: 1rem auto 0; width: 3rem; height: 1px; background: var(--
 }
 .float-tools button:hover { color: var(--accent); }
 .float-tools svg { width: 1rem; height: 1rem; }
-
-/* 钉住开关 toast */
-#pinToast {
-  position: fixed; left: 50%; top: 4rem; z-index: 50;
-  transform: translateX(-50%);
-  display: none;
-  border-radius: 9999px; padding: 0.5rem 1rem; font-size: 0.875rem;
-  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
-  background: var(--c-card); color: var(--accent);
-  box-shadow: 0 10px 15px -3px rgba(0,0,0,.1);
-}
-#pinToast.show { display: block; }
 
 /* ============ 弹窗通用 ============ */
 .modal {
@@ -355,19 +327,6 @@ header .rule { margin: 1rem auto 0; width: 3rem; height: 1px; background: var(--
 }
 .pill--cat { background: color-mix(in srgb, var(--accent) 10%, transparent); color: var(--accent); }
 .pill--done { background: var(--accent); color: var(--accent-fg); font-weight: 500; }
-.pin-btn {
-  border-radius: 9999px; padding: 0.25rem 0.625rem; cursor: pointer; font-family: inherit;
-  font-size: 0.75rem; font-weight: 500;
-  border: 1px solid var(--c-border); background: transparent; color: var(--c-sub);
-  transition: border-color .15s, color .15s, background-color .15s;
-}
-.pin-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
-.pin-btn--on { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
-.pin-btn:disabled {
-  cursor: not-allowed; opacity: 0.55;
-  border-color: color-mix(in srgb, var(--c-border) 60%, transparent);
-  color: var(--c-sub);
-}
 .bank-section { border: 1px solid color-mix(in srgb, var(--c-border) 80%, transparent); border-radius: 0.75rem; overflow: hidden; margin-bottom: 0.5rem; }
 .bank-section > .sec-head {
   display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 0.5rem;
@@ -392,7 +351,6 @@ header .rule { margin: 1rem auto 0; width: 3rem; height: 1px; background: var(--
 }
 button.term-chip { border: none; cursor: pointer; transition: background-color .15s; }
 button.term-chip:hover { background: var(--c-hover); }
-button.term-chip.pinned { background: var(--accent); color: var(--accent-fg); }
 .term-chip.done {
   background: color-mix(in srgb, var(--accent) 10%, transparent); color: var(--accent);
   border-color: color-mix(in srgb, var(--accent) 40%, transparent); cursor: default;
@@ -497,8 +455,6 @@ button.term-chip.pinned { background: var(--accent); color: var(--accent-fg); }
 </head>
 <body>
 
-<div id="pinToast"></div>
-
 <div class="float-tools">
   <button id="btnSound" aria-label="声音"></button>
   <button id="btnSettings" aria-label="设置"></button>
@@ -545,7 +501,6 @@ button.term-chip.pinned { background: var(--accent); color: var(--accent-fg); }
     </div>
 
     <div id="controls"></div>
-    <div id="pinBar"></div>
   </div>
 </section>
 
@@ -599,7 +554,7 @@ button.term-chip.pinned { background: var(--accent); color: var(--accent-fg); }
 /* ================================================================
    小导片场 · 先查后讲 —— 单文件 HTML 版
    与 Next.js 版（main 分支）功能对齐：253 词种子库、轮盘抽词、
-   查资料/表达双计时、钉住（?pin=1 隐藏开关）、6 套主题、批量导入、
+   查资料/表达双计时、6 套主题、批量导入、
    Web Audio 音效、localStorage 持久化。
    ================================================================ */
 
@@ -788,8 +743,6 @@ const state = {
   spinning: false,
   reelWords: [],
   chosen: null,
-  pinnedId: null,
-  pinOn: false,
   themeKey: "morandi",
   muted: false,
   bankExpanded: new Set(),
@@ -851,32 +804,6 @@ let timerId = null;
 
 function persistExpressed() { try { localStorage.setItem(EXP_KEY, JSON.stringify(state.expressedRecords)); } catch {} }
 function persistCustom() { try { localStorage.setItem(CUSTOM_KEY, JSON.stringify(state.customTerms)); } catch {} }
-
-/* ============ 钉住开关：?pin=1 / ?pin=0 ============ */
-(function initPin() {
-  try {
-    const q = new URLSearchParams(location.search).get("pin");
-    if (q === "1" || q === "0") {
-      if (q === "1") localStorage.setItem("xd-pin", "1");
-      else localStorage.removeItem("xd-pin");
-      history.replaceState(null, "", location.pathname);
-      state.pinOn = q === "1";
-      showToast(q === "1" ? "已开启「钉住」功能：去「话题库」选词固定" : "已关闭「钉住」功能");
-      renderAll();
-      return;
-    }
-    state.pinOn = localStorage.getItem("xd-pin") === "1";
-  } catch {}
-})();
-let toastTimer = null;
-function showToast(msg) {
-  const el = $("pinToast");
-  el.textContent = msg;
-  el.classList.add("show");
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.classList.remove("show"), 4000);
-}
-const pinEnabled = () => state.pinOn;
 
 /* ============ 主题 ============ */
 function applyTheme(k) {
@@ -1029,20 +956,6 @@ function renderControls() {
       box.appendChild(mk("btn btn--ghost", ICONS.reload, "换命题", spin));
     }
   }
-  renderPinBar();
-}
-
-function renderPinBar() {
-  const bar = $("pinBar");
-  if (!pinEnabled() || !state.pinnedId) { bar.classList.remove("show"); bar.innerHTML = ""; return; }
-  const p = allPrompts().find(x => x.id === state.pinnedId);
-  if (!p) { bar.classList.remove("show"); return; }
-  bar.innerHTML = "<span>已固定：" + p.term + "（换命题只出它）</span>";
-  const btn = document.createElement("button");
-  btn.textContent = "取消固定";
-  btn.onclick = () => { state.pinnedId = null; renderAll(); };
-  bar.appendChild(btn);
-  bar.classList.add("show");
 }
 
 function renderTools() {
@@ -1093,22 +1006,7 @@ function syncTweenNumbers() {
 /* ============ 核心流程 ============ */
 function clearTimers() { if (timerId) { clearInterval(timerId); timerId = null; } }
 
-function resolvePinned() {
-  if (!state.pinnedId) return null;
-  return allPrompts().find(p => p.id === state.pinnedId) || null;
-}
-
-function autoUnpinIfExpressed() {
-  if (!state.pinnedId) return;
-  const p = allPrompts().find(x => x.id === state.pinnedId);
-  if (p && (expressedIds.has(p.id) || expressedTerms.has(p.term))) {
-    state.pinnedId = null;
-  }
-}
-
 function drawFromPool(pool) {
-  const pinned = resolvePinned();
-  if (pinned) { state.prompt = pinned; return; }
   state.prompt = pool.length === 0 ? null : pickRandom(pool);
 }
 
@@ -1116,15 +1014,6 @@ function spin() {
   sound.prime();
   clearTimers();
   state.phase = "idle"; state.running = false; state.left = state.speakDuration;
-  const pinned = resolvePinned();
-  if (pinned) {
-    state.chosen = pinned;
-    state.reelWords = buildReel([pinned], pinned);
-    state.spinning = true;
-    renderAll();
-    startReelAnim();
-    return;
-  }
   const pool = buildPool(state.cat, state.customTerms);
   if (pool.length === 0) { state.prompt = null; renderAll(); return; }
   const chosen = pickRandom(pool);
@@ -1169,17 +1058,10 @@ function startReelAnim() {
 
 function switchCat(next) {
   if (next === state.cat) return;
-  const pinned = resolvePinned();
   sound.prime();
   clearTimers();
   state.cat = next;
   state.phase = "idle"; state.running = false; state.left = state.speakDuration;
-  if (pinned) {
-    state.prompt = pinned;
-    if (!state.muted) sound.spinEnd();
-    renderAll();
-    return;
-  }
   const pool = buildPool(next, state.customTerms);
   drawFromPool(pool);
   if (!state.muted) sound.spinEnd();
@@ -1191,7 +1073,6 @@ function addExpressedRecord(p) {
   state.expressedRecords.push({ id: p.id, term: p.term, category: p.category });
   expressedIds.add(p.id); expressedTerms.add(p.term);
   persistExpressed();
-  autoUnpinIfExpressed();
 }
 
 function markDone() {
@@ -1354,7 +1235,6 @@ function renderBankList(box) {
     }
     for (const p of hits) {
       const done = expressedIds.has(p.id) || expressedTerms.has(p.term);
-      const isPinned = state.pinnedId === p.id;
       const row = document.createElement("div");
       row.className = "bank-hit" + (done ? " bank-hit--done" : "");
       const left = document.createElement("span");
@@ -1363,19 +1243,6 @@ function renderBankList(box) {
       left.lastChild.textContent = p.term;
       const right = document.createElement("span");
       right.className = "meta";
-      if (pinEnabled()) {
-        const pb = document.createElement("button");
-        pb.className = "pin-btn" + (isPinned && !done ? " pin-btn--on" : "");
-        pb.textContent = isPinned ? "已钉" : "钉住";
-        if (done) {
-          pb.disabled = true;
-          pb.title = "已表达过的词不能再钉住";
-        } else {
-          pb.title = isPinned ? "取消固定" : "固定这个词：换命题时只出它";
-          pb.onclick = () => { state.pinnedId = isPinned ? null : p.id; renderSettings(); renderAll(); };
-        }
-        right.appendChild(pb);
-      }
       if (done) {
         const d = document.createElement("span");
         d.className = "pill pill--done";
@@ -1424,20 +1291,10 @@ function renderBankList(box) {
     } else {
       for (const p of s.items) {
         const done = expressedIds.has(p.id) || expressedTerms.has(p.term);
-        const isPinned = state.pinnedId === p.id;
-        let el;
-        if (pinEnabled() && !done) {
-          el = document.createElement("button");
-          el.className = "term-chip" + (isPinned ? " pinned" : "");
-          el.title = "固定这个词：换命题时只出它";
-          el.onclick = () => { state.pinnedId = isPinned ? null : p.id; renderBankList(box); renderAll(); };
-          el.textContent = p.term + (isPinned ? " · 已钉" : "");
-        } else {
-          el = document.createElement("span");
-          el.className = "term-chip" + (done ? " done" : "");
-          if (done) el.title = "已表达过的词不能再钉住";
-          el.textContent = p.term;
-        }
+        const el = document.createElement("span");
+        el.className = "term-chip" + (done ? " done" : "");
+        if (done) el.title = "已表达";
+        el.textContent = p.term;
         bodyEl.appendChild(el);
       }
     }
@@ -1464,7 +1321,6 @@ function renderExpressedTab(body) {
     clearBtn.onclick = () => {
       state.expressedRecords = [];
       refreshExpressedSets();
-      autoUnpinIfExpressed();
       persistExpressed();
       renderSettings(); renderAll();
     };
