@@ -357,6 +357,16 @@ export function PromptStage() {
   );
   const allPrompts = useMemo(() => [...prompts, ...customPrompts], [customPrompts]);
 
+  // 钉住的词一旦被记为「已表达」，自动取消钉住（已表达的词不允许再固定反复练）
+  useEffect(() => {
+    if (!pinnedId) return;
+    const pinTerm = allPrompts.find((p) => p.id === pinnedId)?.term;
+    if (!pinTerm) return;
+    if (expressed.has(pinnedId) || expressedTerms.has(pinTerm)) {
+      setPinnedId(null);
+    }
+  }, [pinnedId, expressed, expressedTerms, allPrompts]);
+
   // 载入本地存储：已表达 + 个人词库，并完成首抽（直接定格，无动画）
   useEffect(() => {
     let exp: ExpressedRecord[] = [];
@@ -1271,12 +1281,16 @@ export function PromptStage() {
                                 <span className="flex shrink-0 items-center gap-1.5">
                                   {pinEnabled && (
                                   <button
-                                    onClick={() => setPinnedId(isPinned ? null : p.id)}
+                                    onClick={() => { if (!done) setPinnedId(isPinned ? null : p.id); }}
+                                    disabled={done}
+                                    title={done ? "已表达过的词不能再钉住" : isPinned ? "取消固定" : "固定这个词：换命题时只出它"}
                                     className={
                                       "rounded-full px-2.5 py-1 text-xs font-medium transition-colors " +
-                                      (isPinned
-                                        ? "bg-accent text-accent-fg"
-                                        : "border border-zinc-300 text-zinc-500 hover:border-accent hover:text-accent dark:border-zinc-700 dark:text-zinc-400")
+                                      (done
+                                        ? "cursor-not-allowed border border-zinc-200 text-zinc-300 dark:border-zinc-700 dark:text-zinc-600"
+                                        : isPinned
+                                          ? "bg-accent text-accent-fg"
+                                          : "border border-zinc-300 text-zinc-500 hover:border-accent hover:text-accent dark:border-zinc-700 dark:text-zinc-400")
                                     }
                                   >
                                     {isPinned ? "已钉" : "钉住"}
@@ -1358,7 +1372,7 @@ export function PromptStage() {
                                       const done = expressed.has(p.id) || expressedTerms.has(p.term);
                                       const isPinned = pinnedId === p.id;
                                       return (
-                                        pinEnabled ? (
+                                        pinEnabled && !done ? (
                                           <button
                                             key={p.id}
                                             onClick={() => setPinnedId(isPinned ? null : p.id)}
@@ -1367,9 +1381,7 @@ export function PromptStage() {
                                               "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs transition-colors " +
                                               (isPinned
                                                 ? "border border-accent bg-accent text-accent-fg"
-                                                : done
-                                                  ? "border border-accent/40 bg-accent/10 text-accent"
-                                                  : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700")
+                                                : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700")
                                             }
                                           >
                                             {p.term}
@@ -1378,6 +1390,7 @@ export function PromptStage() {
                                         ) : (
                                           <span
                                             key={p.id}
+                                            title={done ? "已表达过的词不能再钉住" : undefined}
                                             className={
                                               "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs " +
                                               (done
